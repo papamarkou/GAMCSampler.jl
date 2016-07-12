@@ -1,13 +1,13 @@
 using Lora
 using PGUManifoldMC
 
-covariates, = dataset("swiss", "measurements")
-ndata, npars = size(covariates)
+covariates, = dataset("swiss", "measurements");
+ndata, npars = size(covariates);
 
-covariates = (covariates.-mean(covariates, 1))./repmat(std(covariates, 1), ndata, 1)
+covariates = (covariates.-mean(covariates, 1))./repmat(std(covariates, 1), ndata, 1);
 
-outcome, = dataset("swiss", "status")
-outcome = vec(outcome)
+outcome, = dataset("swiss", "status");
+outcome = vec(outcome);
 
 function ploglikelihood(p::Vector, v::Vector)
   Xp = v[2]*p
@@ -27,7 +27,7 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = PGUSMMALA(0.02)
+sampler = PGUSMMALA(0.02, update=mala_only_update!)
 
 mcrange = BasicMCRange(nsteps=50000, burnin=10000)
 

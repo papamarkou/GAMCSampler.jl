@@ -75,6 +75,10 @@ MuvPGUSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTune
   0
 )
 
+mala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) = sstate.updatetensor = false
+
+smmala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) = sstate.updatetensor = true
+
 function mahalanobis_update!(
   sstate::MuvPGUSMMALAState,
   pstate::ParameterState{Continuous, Multivariate},

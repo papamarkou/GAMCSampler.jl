@@ -21,7 +21,10 @@ import Lora:
 export
   PGUSMMALA,
   PGUSMMALAState,
-  MuvPGUSMMALAState
+  MuvPGUSMMALAState,
+  mala_only_update!,
+  mahalanobis_update!,
+  smmala_only_update!
 
 include("samplers/PGUSMMALA.jl")
 include("samplers/iterate/PGUSMMALA.jl")

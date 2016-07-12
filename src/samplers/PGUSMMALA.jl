@@ -71,13 +71,16 @@ MuvPGUSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTune
   RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size),
-  true,
+  false,
   0
 )
 
 mala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) = sstate.updatetensor = false
 
 smmala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) = sstate.updatetensor = true
+
+rand_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}, p::Real=0.5) =
+  sstate.updatetensor = rand(Bernoulli(p))
 
 function mahalanobis_update!(
   sstate::MuvPGUSMMALAState,

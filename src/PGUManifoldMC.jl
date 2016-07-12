@@ -2,7 +2,6 @@ module PGUManifoldMC
 
 using Distributions
 using Lora
-using PDMats
 
 import Base:
   show,

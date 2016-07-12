@@ -9,11 +9,13 @@ abstract PGUSMMALAState <: MCSamplerState
 type MuvPGUSMMALAState <: PGUSMMALAState
   pstate::ParameterState{Continuous, Multivariate}
   tune::MCTunerState
+  sqrttunestep::Real
   ratio::Real
   μ::RealVector
   newinvtensor::RealMatrix
   oldinvtensor::RealMatrix
-  cholinvtensor::RealLowerTriangular
+  newcholinvtensor::RealLowerTriangular
+  oldcholinvtensor::RealLowerTriangular
   newfirstterm::RealVector
   oldfirstterm::RealVector
   updatetensor::Bool
@@ -22,11 +24,13 @@ type MuvPGUSMMALAState <: PGUSMMALAState
   function MuvPGUSMMALAState(
     pstate::ParameterState{Continuous, Multivariate},
     tune::MCTunerState,
+    sqrttunestep::Real,
     ratio::Real,
     μ::RealVector,
     newinvtensor::RealMatrix,
     oldinvtensor::RealMatrix,
-    cholinvtensor::RealLowerTriangular,
+    newcholinvtensor::RealLowerTriangular,
+    oldcholinvtensor::RealLowerTriangular,
     newfirstterm::RealVector,
     oldfirstterm::RealVector,
     updatetensor::Bool,
@@ -34,15 +38,18 @@ type MuvPGUSMMALAState <: PGUSMMALAState
   )
     if !isnan(ratio)
       @assert 0 < ratio < 1 "Acceptance ratio should be between 0 and 1"
+      @assert sqrttunestep > 0 "Square root of tuned drift step is not positive"
     end
     new(
       pstate,
       tune,
+      sqrttunestep,
       ratio,
       μ,
       newinvtensor,
       oldinvtensor,
-      cholinvtensor,
+      newcholinvtensor,
+      oldcholinvtensor,
       newfirstterm,
       oldfirstterm,
       updatetensor,
@@ -56,9 +63,11 @@ MuvPGUSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTune
   pstate,
   tune,
   NaN,
+  NaN,
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
+  RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
   RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size),
@@ -125,7 +134,9 @@ function sampler_state(
   vstate::VariableStateVector
 )
   sstate = MuvPGUSMMALAState(generate_empty(pstate), tuner_state(sampler, tuner))
+  sstate.sqrttunestep = sqrt(sstate.tune.step)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
+  sstate.oldcholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
   sstate
 end
@@ -146,15 +157,17 @@ end
 
 ## Reset sampler state
 
-function reset!{F<:VariateForm}(
+function reset!(
   sstate::PGUSMMALAState,
-  pstate::ParameterState{Continuous, F},
-  parameter::Parameter{Continuous, F},
+  pstate::ParameterState{Continuous, Multivariate},
+  parameter::Parameter{Continuous, Multivariate},
   sampler::PGUSMMALA,
   tuner::MCTuner
 )
   reset!(sstate.tune, sampler, tuner)
+  sstate.sqrttunestep = sqrt(sstate.tune.step)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
+  sstate.oldcholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
 end
 

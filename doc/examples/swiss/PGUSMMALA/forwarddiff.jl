@@ -46,8 +46,34 @@ job = BasicMCJob(model, sampler, mcrange, v0, tuner=AcceptanceRateMCTuner(0.5, v
 
 run(job)
 
-chain = output(job)
+chain01 = output(job)
 
-mean(chain)
+mean(chain01)
 
-acceptance(chain)
+acceptance(chain01)
+
+# Run a second long chain if you want to estimate ESS
+
+sampler = SMMALA(0.02)
+
+mcrange = BasicMCRange(nsteps=510000, burnin=10000)
+
+v0 = Dict(:λ=>100., :X=>covariates, :y=>outcome, :p=>[5.1, -0.9, 8.2, -4.5])
+
+outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
+
+job = BasicMCJob(model, sampler, mcrange, v0, tuner=AcceptanceRateMCTuner(0.5, verbose=true), outopts=outopts)
+
+run(job)
+
+chain02 = output(job)
+
+chain02mean = mean(chain02)
+
+chain02var = Float64[var(vec(chain02.value[i, :])) for i in 1:4]
+
+# Estimate ESS using the mean and (IID) variance of the independent longer chain
+
+Float64[ess(vec(chain01.value[i, :]), chain02mean[i], chain02var[i], chain01.n) for i in 1:4]
+
+ess(chain01, vtype=:bm)

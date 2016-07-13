@@ -28,15 +28,17 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
 
   smmalabody = [:(_job.sstate.updatetensorcount += 1)]
 
-  push!(smmalabody, :(_job.parameter.uptotensorlogtarget!(_job.pstate)))
+  smmalapasttensorbody = [:(_job.parameter.uptotensorlogtarget!(_job.pstate))]
 
   if job.sampler.transform != nothing
-    push!(smmalabody, :(_job.pstate.tensorlogtarget = _job.sampler.transform(_job.pstate.tensorlogtarget)))
+    push!(smmalapasttensorbody, :(_job.pstate.tensorlogtarget = _job.sampler.transform(_job.pstate.tensorlogtarget)))
   end
 
-  push!(smmalabody, :(_job.sstate.oldinvtensor = inv(_job.pstate.tensorlogtarget)))
+  push!(smmalapasttensorbody, :(_job.sstate.oldinvtensor = inv(_job.pstate.tensorlogtarget)))
 
-  push!(smmalabody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+  push!(smmalapasttensorbody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+
+  push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
   push!(smmalabody, :(_job.parameter.uptotensorlogtarget!(_job.sstate.pstate)))
 
@@ -48,7 +50,15 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
 
   malabody = [:(_job.parameter.uptogradlogtarget!(_job.sstate.pstate))]
 
-  push!(body, Expr(:if, :(_job.sstate.updatetensor), Expr(:block, smmalabody...), malabody...))
+  if job.sampler.identitymala
+    push!(malabody, :(_job.pstate.tensorlogtarget = eye(_job.pstate.size, _job.pstate.size)))
+
+    push!(malabody, :(_job.sstate.oldinvtensor = eye(_job.pstate.size, _job.pstate.size)))
+
+    push!(malabody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+  end
+
+  push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), malabody...))
 
   push!(body, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
 
@@ -100,7 +110,9 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     )
   ]
 
-  push!(body, Expr(:if, :(_job.sstate.updatetensor), Expr(:block, smmalabody...), Expr(:block, malabody...)))
+  push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), Expr(:block, malabody...)))
+
+  push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 
   push!(update, :(_job.pstate.value = copy(_job.sstate.pstate.value)))
 
@@ -128,7 +140,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, :(_job.sstate.oldcholinvtensor = copy(_job.sstate.newcholinvtensor)))
 
-  push!(update, Expr(:if, :(_job.sstate.updatetensor), Expr(:block, smmalabody...)))
+  push!(update, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...)))
 
   push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
   push!(noupdate, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))

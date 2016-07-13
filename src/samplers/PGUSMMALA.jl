@@ -18,7 +18,8 @@ type MuvPGUSMMALAState <: PGUSMMALAState
   oldcholinvtensor::RealLowerTriangular
   newfirstterm::RealVector
   oldfirstterm::RealVector
-  updatetensor::Bool
+  presentupdatetensor::Bool
+  pastupdatetensor::Bool
   updatetensorcount::Int
 
   function MuvPGUSMMALAState(
@@ -33,7 +34,8 @@ type MuvPGUSMMALAState <: PGUSMMALAState
     oldcholinvtensor::RealLowerTriangular,
     newfirstterm::RealVector,
     oldfirstterm::RealVector,
-    updatetensor::Bool,
+    presentupdatetensor::Bool,
+    pastupdatetensor::Bool,
     updatetensorcount::Int
   )
     if !isnan(ratio)
@@ -52,7 +54,8 @@ type MuvPGUSMMALAState <: PGUSMMALAState
       oldcholinvtensor,
       newfirstterm,
       oldfirstterm,
-      updatetensor,
+      presentupdatetensor,
+      pastupdatetensor,
       updatetensorcount
     )
   end
@@ -72,22 +75,25 @@ MuvPGUSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTune
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size),
   false,
+  false,
   0
 )
 
-mala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) = sstate.updatetensor = false
+mala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) =
+  sstate.presentupdatetensor = false
 
-smmala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) = sstate.updatetensor = true
+smmala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) =
+  sstate.presentupdatetensor = true
 
 rand_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}, p::Real=0.5) =
-  sstate.updatetensor = rand(Bernoulli(p))
+  sstate.presentupdatetensor = rand(Bernoulli(p))
 
 function mahalanobis_update!(
   sstate::MuvPGUSMMALAState,
   pstate::ParameterState{Continuous, Multivariate},
   a::Real=0.95
 )
-  sstate.updatetensor =
+  sstate.presentupdatetensor =
     if dot(
       sstate.pstate.value-pstate.value,
       pstate.tensorlogtarget*(sstate.pstate.value-pstate.value)
@@ -102,17 +108,31 @@ end
 
 immutable PGUSMMALA <: LMCSampler
   driftstep::Real
+  identitymala::Bool
   update!::Function
   transform::Union{Function, Void}
+  initupdatetensor::Tuple{Bool,Bool} # The tuple ordinates refer to (sstate.presentupdatetensor, sstate.pastupdatetensor)
 
-  function PGUSMMALA(driftstep::Real, update!::Function, transform::Union{Function, Void})
+  function PGUSMMALA(
+    driftstep::Real,
+    identitymala::Bool,
+    update!::Function,
+    transform::Union{Function, Void},
+    initupdatetensor::Tuple{Bool,Bool}
+    )
     @assert driftstep > 0 "Drift step is not positive"
-    new(driftstep, update!, transform)
+    new(driftstep, identitymala, update!, transform, initupdatetensor)
   end
 end
 
-PGUSMMALA(driftstep::Real=1.; update::Function=mahalanobis_update!, transform::Union{Function, Void}=nothing) =
-  PGUSMMALA(driftstep, update, transform)
+PGUSMMALA(
+  driftstep::Real=1.;
+  identitymala::Bool=false,
+  update::Function=mahalanobis_update!,
+  transform::Union{Function, Void}=nothing,
+  initupdatetensor::Tuple{Bool,Bool}=(false, false)
+) =
+  PGUSMMALA(driftstep, identitymala, update, transform, initupdatetensor)
 
 ### Initialize PGUSMMALA sampler
 
@@ -145,6 +165,7 @@ function sampler_state(
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.oldcholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
+  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
   sstate
 end
 
@@ -176,6 +197,7 @@ function reset!(
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.oldcholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
+  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
 end
 
 Base.show(io::IO, sampler::PGUSMMALA) = print(io, "PGUSMMALA sampler: drift step = $(sampler.driftstep)")

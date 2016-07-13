@@ -27,7 +27,14 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = PGUSMMALA(0.02, update=mala_only_update!)
+# sampler = PGUSMMALA(0.02, update=mala_only_update!)
+
+sampler = PGUSMMALA(
+  0.02,
+  identitymala=false,
+  update=(sstate, pstate) -> rand_update!(sstate, pstate, 0.3),
+  initupdatetensor=(true, false)
+)
 
 mcrange = BasicMCRange(nsteps=50000, burnin=10000)
 

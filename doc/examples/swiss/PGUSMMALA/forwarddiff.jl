@@ -32,7 +32,7 @@ model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed
 sampler = PGUSMMALA(
   0.02,
   identitymala=false,
-  update=(sstate, pstate) -> rand_update!(sstate, pstate, 0.3),
+  update=(sstate) -> rand_update!(sstate, pstate, 0.3),
   initupdatetensor=(true, false)
 )
 

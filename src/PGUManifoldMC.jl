@@ -26,7 +26,6 @@ export
   MuvPGUSMMALAState,
   ess,
   mala_only_update!,
-  mahalanobis_update!,
   rand_update!,
   smmala_only_update!
 

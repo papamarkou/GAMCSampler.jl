@@ -5,7 +5,7 @@ using PGUManifoldMC
 pmean = [4.1, 3.7]
 pvar = [1., 1.]
 
-plogtarget(p::Vector, v::Vector) = logpdf(MvNormal(pmean, [1 0.75; 0.75 1]), p)
+plogtarget(p::Vector, v::Vector) = logpdf(MvNormal(pmean, [pvar[1] 0.75; 0.75 pvar[2]]), p)
 
 p = BasicContMuvParameter(
   :p,
@@ -70,7 +70,7 @@ acceptance(chain)
 sampler = PGUSMMALA(
   0.02,
   identitymala=false,
-  update=(sstate, pstate) -> rand_update!(sstate, pstate, 0.3),
+  update=(sstate) -> rand_update!(sstate, 0.3),
   initupdatetensor=(true, false)
 )
 
@@ -101,7 +101,7 @@ round(100*job.sstate.updatetensorcount/job.range.nsteps, 2)
 sampler = PGUSMMALA(
   0.02,
   identitymala=true,
-  update=(sstate, pstate) -> rand_update!(sstate, pstate, 0.3),
+  update=(sstate) -> rand_update!(sstate, 0.3),
   initupdatetensor=(true, false)
 )
 

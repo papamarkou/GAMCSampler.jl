@@ -79,30 +79,11 @@ MuvPGUSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTune
   0
 )
 
-mala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) =
-  sstate.presentupdatetensor = false
+mala_only_update!(sstate::MuvPGUSMMALAState) = sstate.presentupdatetensor = false
 
-smmala_only_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}) =
-  sstate.presentupdatetensor = true
+smmala_only_update!(sstate::MuvPGUSMMALAState) = sstate.presentupdatetensor = true
 
-rand_update!(sstate::MuvPGUSMMALAState, pstate::ParameterState{Continuous, Multivariate}, p::Real=0.5) =
-  sstate.presentupdatetensor = rand(Bernoulli(p))
-
-function mahalanobis_update!(
-  sstate::MuvPGUSMMALAState,
-  pstate::ParameterState{Continuous, Multivariate},
-  a::Real=0.95
-)
-  sstate.presentupdatetensor =
-    if dot(
-      sstate.pstate.value-pstate.value,
-      pstate.tensorlogtarget*(sstate.pstate.value-pstate.value)
-    )/sstate.tune.step > quantile(Chisq(pstate.size), a)
-      true
-    else
-      false
-    end
-end
+rand_update!(sstate::MuvPGUSMMALAState, p::Real=0.5) = sstate.presentupdatetensor = rand(Bernoulli(p))
 
 ### Metropolis-adjusted Langevin Algorithm (PGUSMMALA)
 
@@ -128,7 +109,7 @@ end
 PGUSMMALA(
   driftstep::Real=1.;
   identitymala::Bool=false,
-  update::Function=mahalanobis_update!,
+  update::Function=rand_update!,
   transform::Union{Function, Void}=nothing,
   initupdatetensor::Tuple{Bool,Bool}=(false, false)
 ) =

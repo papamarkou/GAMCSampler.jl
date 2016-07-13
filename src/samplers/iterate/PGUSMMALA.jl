@@ -14,21 +14,15 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     push!(body, :(_job.sstate.tune.proposed += 1))
   end
 
-  push!(body, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
+  push!(body, :(_job.sampler.update!(_job.sstate)))
 
-  push!(
-    body,
-    :(
-      _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
-    )
-  )
+  smmalabody = []
 
-  push!(body, :(_job.sampler.update!(_job.sstate, _job.pstate)))
+  push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
-  smmalabody = [:(_job.sstate.updatetensorcount += 1)]
+  smmalapasttensorbody = []
 
-  smmalapasttensorbody = [:(_job.parameter.uptotensorlogtarget!(_job.pstate))]
+  push!(smmalapasttensorbody, :(_job.parameter.uptotensorlogtarget!(_job.pstate)))
 
   if job.sampler.transform != nothing
     push!(smmalapasttensorbody, :(_job.pstate.tensorlogtarget = _job.sampler.transform(_job.pstate.tensorlogtarget)))
@@ -40,6 +34,32 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
+  if job.sampler.identitymala
+    malabody = []
+
+    push!(malabody, :(_job.pstate.tensorlogtarget = eye(_job.pstate.size, _job.pstate.size)))
+
+    push!(malabody, :(_job.sstate.oldinvtensor = eye(_job.pstate.size, _job.pstate.size)))
+
+    push!(malabody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+
+    push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), Expr(:block, malabody...)))
+  else
+    push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...)))
+  end
+
+  push!(body, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
+
+  push!(
+    body,
+    :(
+      _job.sstate.pstate.value =
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+    )
+  )
+
+  smmalabody = []
+
   push!(smmalabody, :(_job.parameter.uptotensorlogtarget!(_job.sstate.pstate)))
 
   if job.sampler.transform != nothing
@@ -49,14 +69,6 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
   push!(smmalabody, :(_job.sstate.newinvtensor = inv(_job.sstate.pstate.tensorlogtarget)))
 
   malabody = [:(_job.parameter.uptogradlogtarget!(_job.sstate.pstate))]
-
-  if job.sampler.identitymala
-    push!(malabody, :(_job.pstate.tensorlogtarget = eye(_job.pstate.size, _job.pstate.size)))
-
-    push!(malabody, :(_job.sstate.oldinvtensor = eye(_job.pstate.size, _job.pstate.size)))
-
-    push!(malabody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
-  end
 
   push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), malabody...))
 

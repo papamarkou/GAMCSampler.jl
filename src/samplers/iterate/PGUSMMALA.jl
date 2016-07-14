@@ -10,7 +10,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     error("Only multivariate parameter states allowed in PGUSMMALA code generation")
   end
 
-  if job.tuner.verbose
+  if (isa(job.tuner, VanillaMCTuner) && job.tuner.verbose) || isa(job.tuner, AcceptanceRateMCTuner)
     push!(body, :(_job.sstate.tune.proposed += 1))
   end
 
@@ -172,7 +172,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
   end
 
-  if job.tuner.verbose
+  if (isa(job.tuner, VanillaMCTuner) && job.tuner.verbose) || isa(job.tuner, AcceptanceRateMCTuner)
     push!(update, :(_job.sstate.tune.accepted += 1))
   end
 

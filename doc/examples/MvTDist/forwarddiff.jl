@@ -2,44 +2,33 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
-n = 100
-ystd = 2.
-pmean = [0., 0.]
-pvar = [1., 1.]
-ptrue = [0.1, 0.3]
-
-y = rand(Normal(ptrue[1]+abs2(ptrue[2]), ystd), 100)
-
-ploglikelihood(p::Vector, v::Vector) = sum([logpdf(Normal(p[1]+abs2(p[2]), ystd), v[1][i]) for i in 1:n])
-
-plogprior(p::Vector, v::Vector) = logpdf(MvNormal(pmean, pvar), p)
+plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(2., [1., 2.], [1. 0.; 0. 1.]), p)
 
 p = BasicContMuvParameter(
   :p,
-  loglikelihood=ploglikelihood,
-  logprior=plogprior,
-  nkeys=2,
+  logtarget=plogtarget,
+  nkeys=1,
   autodiff=:forward,
   order=2
 )
 
-model = likelihood_model([Data(:y), p], isindexed=false)
+model = likelihood_model([p], isindexed=false)
 
 # Simulation 01
 
 sampler = SMMALA(1., softabs)
 
 # sampler = PGUSMMALA(
-#   1,
+#   1.,
 #   identitymala=false,
 #   update=(sstate) -> rand_update!(sstate, 0.3),
-#   transform=softabs,
+#   transform=H -> softabs(H, 1000.),
 #   initupdatetensor=(true, false)
 # )
 
-mcrange = BasicMCRange(nsteps=11000, burnin=1000)
+mcrange = BasicMCRange(nsteps=110000, burnin=10000)
 
-v0 = Dict(:y=>y, :p=>[-6., 5.])
+v0 = Dict(:p=>[-1., 1.])
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
 
@@ -57,8 +46,6 @@ run(job)
 chain = output(job)
 
 ppostmean = mean(chain)
-
-ppostmean-ptrue
 
 ess(chain, vtype=:bm)
 

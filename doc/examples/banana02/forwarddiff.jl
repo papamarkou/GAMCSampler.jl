@@ -2,31 +2,28 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
-n = 2
+n = 100
+ystd = 2.
+pmean = [0., 0.]
+pvar = [1., 1.]
+ptrue = [0.9, 0.1]
 
-# θ = [0., 0.]
-# pvar = [10., 1.]
+y = rand(Normal(ptrue[1]+abs2(ptrue[2]), ystd), 100)
 
-θ = [0., 0.]
-pvar = [4., 1.]
+ploglikelihood(p::Vector, v::Vector) = sum([logpdf(Normal(p[1]+abs2(p[2]), ystd), v[1][i]) for i in 1:n])
 
-# plogtarget(p::Vector, v::Vector) =
-  # logpdf(MvNormal(θ, pvar), [p[1], p[2]+0.03*abs2(p[1])-0.3])
-  # logpdf(MvNormal(θ, pvar), [p[1], p[2]+0.02*(abs2(p[1])-pvar[1])])
-
-plogtarget(p::Vector, v::Vector) =
-  # logpdf(MvNormal(θ, pvar), [p[1], p[2]+0.03*abs2(p[1])-0.3])
-  logpdf(MvNormal(θ, pvar), [p[1], p[2]+0.03*(abs2(p[1])-pvar[1])])
+plogprior(p::Vector, v::Vector) = logpdf(MvNormal(pmean, pvar), p)
 
 p = BasicContMuvParameter(
   :p,
-  logtarget=plogtarget,
-  nkeys=1,
+  loglikelihood=ploglikelihood,
+  logprior=plogprior,
+  nkeys=2,
   autodiff=:forward,
   order=2
 )
 
-model = likelihood_model([p], isindexed=false)
+model = likelihood_model([Data(:y), p], isindexed=false)
 
 # Simulation 01
 
@@ -40,9 +37,9 @@ sampler = SMMALA(1., softabs)
 #   initupdatetensor=(true, false)
 # )
 
-mcrange = BasicMCRange(nsteps=2100000, burnin=200000)
+mcrange = BasicMCRange(nsteps=11000, burnin=1000)
 
-v0 = Dict(:p=>[-6., 5.])
+v0 = Dict(:y=>y, :p=>[-6., 5.])
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
 
@@ -59,7 +56,9 @@ run(job)
 
 chain = output(job)
 
-mean(chain)
+ppostmean = mean(chain)
+
+ppostmean-ptrue
 
 ess(chain, vtype=:bm)
 

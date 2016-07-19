@@ -2,7 +2,7 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
-plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(50., [1., 2.], [1. 0.; 0. 1.]), p)
+plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(30., [1., 2.], [1. 0.; 0. 1.]), p)
 
 p = BasicContMuvParameter(
   :p,
@@ -19,7 +19,6 @@ model = likelihood_model([p], isindexed=false)
 sampler = PGUSMMALA(
   1.,
   identitymala=false,
-  # update=(sstate, i) -> rand_update!(sstate, i, 0.75),
   update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
@@ -29,7 +28,7 @@ mcrange = BasicMCRange(nsteps=110000, burnin=10000)
 
 v0 = Dict(:p=>[-1., 1.])
 
-outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget, :tensorlogtarget], :diagnostics=>[:accept])
+outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
 
 job = BasicMCJob(
   model,
@@ -51,7 +50,5 @@ ppostmean = mean(chain)
 ess(chain, vtype=:bm)
 
 ess(chain, vtype=:bm)/runtime
-
-# Float64[ess(vec(chain.value[i, :]), θ[i], pvar[i], chain.n) for i in 1:n]
 
 acceptance(chain)

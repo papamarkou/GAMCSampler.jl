@@ -9,14 +9,14 @@ p = BasicContMuvParameter(
   logtarget=plogtarget,
   nkeys=1,
   autodiff=:forward,
-  order=2
+  order=1
 )
 
 model = likelihood_model([p], isindexed=false)
 
 # Simulation 01
 
-sampler = SMMALA(1., softabs)
+sampler = MALA(1.)
 
 mcrange = BasicMCRange(nsteps=110000, burnin=10000)
 

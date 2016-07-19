@@ -86,8 +86,10 @@ smmala_only_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer) = sstat
 rand_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, p::Real=0.5) =
   sstate.presentupdatetensor = rand(Bernoulli(p))
 
-rand_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=10.) =
-  sstate.presentupdatetensor =rand(Bernoulli(exp(-a*i/tot)))
+exp_decay(i::Integer, tot::Integer, a::Real=10.) = exp(-a*i/tot)
+
+rand_exp_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=10.) =
+  sstate.presentupdatetensor = rand(Bernoulli(exp_decay(i, tot, a)))
 
 ### Metropolis-adjusted Langevin Algorithm (PGUSMMALA)
 

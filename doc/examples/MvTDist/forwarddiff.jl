@@ -21,7 +21,8 @@ model = likelihood_model([p], isindexed=false)
 sampler = PGUSMMALA(
   1.,
   identitymala=false,
-  update=(sstate) -> rand_update!(sstate, 0.75),
+  # update=(sstate, i) -> rand_update!(sstate, i, 0.75),
+  update=(sstate, i) -> rand_decay_update!(sstate, i, 0.75),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
 )

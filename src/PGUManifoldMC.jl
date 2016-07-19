@@ -26,6 +26,7 @@ export
   MuvPGUSMMALAState,
   ess,
   mala_only_update!,
+  rand_decay_update!,
   rand_update!,
   smmala_only_update!
 

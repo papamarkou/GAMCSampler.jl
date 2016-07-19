@@ -14,7 +14,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     push!(body, :(_job.sstate.tune.proposed += 1))
   end
 
-  push!(body, :(_job.sampler.update!(_job.sstate, _job.count)))
+  push!(body, :(_job.sampler.update!(_job.sstate, _job.count, _job.sstate.tune.totproposed)))
 
   smmalabody = []
 

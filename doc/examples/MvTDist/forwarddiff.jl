@@ -22,7 +22,7 @@ sampler = PGUSMMALA(
   1.,
   identitymala=false,
   # update=(sstate, i) -> rand_update!(sstate, i, 0.75),
-  update=(sstate, i) -> rand_decay_update!(sstate, i, 0.75),
+  update=(sstate, i, tot) -> rand_decay_update!(sstate, i, tot),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
 )

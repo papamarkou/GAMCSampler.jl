@@ -79,14 +79,15 @@ MuvPGUSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTune
   0
 )
 
-mala_only_update!(sstate::MuvPGUSMMALAState, i::Integer) = sstate.presentupdatetensor = false
+mala_only_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer) = sstate.presentupdatetensor = false
 
-smmala_only_update!(sstate::MuvPGUSMMALAState, i::Integer) = sstate.presentupdatetensor = true
+smmala_only_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer) = sstate.presentupdatetensor = true
 
-rand_update!(sstate::MuvPGUSMMALAState, i::Integer, p::Real=0.5) = sstate.presentupdatetensor = rand(Bernoulli(p))
+rand_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, p::Real=0.5) =
+  sstate.presentupdatetensor = rand(Bernoulli(p))
 
-rand_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, a::Real=0.5, b::Real=0.5) =
-  sstate.presentupdatetensor =rand(Bernoulli(exp(-0.001*i))) # rand(Bernoulli((1-b)/(i^a)+b))
+rand_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=10.) =
+  sstate.presentupdatetensor =rand(Bernoulli(exp(-a*i/tot)))
 
 ### Metropolis-adjusted Langevin Algorithm (PGUSMMALA)
 

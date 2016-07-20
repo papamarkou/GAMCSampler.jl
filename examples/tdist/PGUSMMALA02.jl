@@ -2,7 +2,17 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
-plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(30., [1., 2.], [1. 0.; 0. 1.]), p)
+function C(n::Int, c::Float64)
+  X = eye(n)
+  [(j <= n-i) ? X[i+j, i] = X[i, i+j] = c^j : nothing for i = 1:(n-1), j = 1:(n-1)]
+  X
+end
+
+n = 5
+Σ = C(n, 0.5)
+ν = 30.
+
+plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(ν, zeros(n), (ν-2)*Σ/ν), p)
 
 p = BasicContMuvParameter(
   :p,
@@ -18,7 +28,7 @@ model = likelihood_model([p], isindexed=false)
 
 sampler = PGUSMMALA(
   1.,
-  identitymala=false,
+  identitymala=true,
   update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
@@ -26,7 +36,7 @@ sampler = PGUSMMALA(
 
 mcrange = BasicMCRange(nsteps=110000, burnin=10000)
 
-v0 = Dict(:p=>[-1., 1.])
+v0 = Dict(:p=>[-4., 2., 3., 1., 2.4])
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
 

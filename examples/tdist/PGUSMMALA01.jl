@@ -2,7 +2,17 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
-plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(50., [1., 2.], [1. 0.; 0. 1.]), p)
+function C(n::Int, c::Float64)
+  X = eye(n)
+  [(j <= n-i) ? X[i+j, i] = X[i, i+j] = c^j : nothing for i = 1:(n-1), j = 1:(n-1)]
+  X
+end
+
+n = 5
+Σ = C(n, 0.5)
+ν = 30.
+
+plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(ν, zeros(n), (ν-2)*Σ/ν), p)
 
 p = BasicContMuvParameter(
   :p,
@@ -16,22 +26,19 @@ model = likelihood_model([p], isindexed=false)
 
 # Simulation 01
 
-# sampler = SMMALA(1., softabs)
-
 sampler = PGUSMMALA(
   1.,
   identitymala=false,
-  # update=(sstate, i) -> rand_update!(sstate, i, 0.75),
-  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot),
+  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 15, 0.),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
 )
 
 mcrange = BasicMCRange(nsteps=110000, burnin=10000)
 
-v0 = Dict(:p=>[-1., 1.])
+v0 = Dict(:p=>[-4., 2., 3., 1., 2.4])
 
-outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget, :tensorlogtarget], :diagnostics=>[:accept])
+outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
 
 job = BasicMCJob(
   model,
@@ -42,7 +49,9 @@ job = BasicMCJob(
   outopts=outopts
 )
 
+tic()
 run(job)
+runtime = toc()
 
 chain = output(job)
 
@@ -50,6 +59,6 @@ ppostmean = mean(chain)
 
 ess(chain, vtype=:bm)
 
-# Float64[ess(vec(chain.value[i, :]), θ[i], pvar[i], chain.n) for i in 1:n]
+ess(chain, vtype=:bm)/runtime
 
 acceptance(chain)

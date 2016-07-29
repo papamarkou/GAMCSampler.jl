@@ -38,8 +38,6 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([p], isindexed=false)
 
-# Simulation 01
-
 # sampler = PGUSMMALA(
 #   3.,
 #   identitymala=false,
@@ -51,7 +49,8 @@ model = likelihood_model([p], isindexed=false)
 sampler = PGUSMMALA(
   1.,
   identitymala=false,
-  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 12.5, 0.),
+  # update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 12.5, 0.),
+  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
 )

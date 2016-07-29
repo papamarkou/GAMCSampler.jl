@@ -8,12 +8,6 @@ function C(n::Int, c::Float64)
   X
 end
 
-# n = 5
-# Σ = C(n, 0.5)
-# ν = 30.
-#
-# plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(ν, zeros(n), (ν-2)*Σ/ν), p)
-
 n = 15
 μ = zeros(n)
 Σ = C(n, 0.5)
@@ -31,11 +25,14 @@ function plogtarget(p::Vector, v::Vector)
   v-shdfhdim*log1p(dot(z, Σtinv*z)/ν)
 end
 
+v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
+
 p = BasicContMuvParameter(
   :p,
   logtarget=plogtarget,
   nkeys=1,
-  autodiff=:forward,
+  autodiff=:reverse,
+  init=Any[(:p, v0[:p]), (:v, Any[v0[:p]])],
   order=2
 )
 
@@ -43,15 +40,13 @@ model = likelihood_model([p], isindexed=false)
 
 sampler = PGUSMMALA(
   1.,
-  identitymala=false,
-  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 15, 0.),
+  identitymala=true,
+  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
 )
 
 mcrange = BasicMCRange(nsteps=110000, burnin=10000)
-
-v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
 

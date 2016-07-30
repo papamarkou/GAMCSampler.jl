@@ -1,3 +1,5 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
+examples/logistic/mala/data
+examples/logistic/mala/output

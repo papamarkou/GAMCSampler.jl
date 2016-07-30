@@ -3,3 +3,5 @@
 *.jl.mem
 examples/logistic/mala/data
 examples/logistic/mala/output
+examples/logistic/smmala/data
+examples/logistic/smmala/output

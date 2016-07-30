@@ -1,4 +1,5 @@
 using Distributions
+using Gadfly
 using Lora
 using PGUManifoldMC
 
@@ -8,12 +9,12 @@ function C(n::Int, c::Float64)
   X
 end
 
-n = 15
+n = 20
 μ = zeros(n)
-Σ = C(n, 0.5)
+Σ = C(n, 0.9)
 ν = 30.
 
-Σt = 28*Σ/30
+Σt = (ν-2)*Σ/ν
 Σtinv = inv(Σt)
 
 function plogtarget(p::Vector, v::Vector)
@@ -25,7 +26,7 @@ function plogtarget(p::Vector, v::Vector)
   v-shdfhdim*log1p(dot(z, Σtinv*z)/ν)
 end
 
-v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
+v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
 
 p = BasicContMuvParameter(
   :p,
@@ -39,18 +40,19 @@ p = BasicContMuvParameter(
 model = likelihood_model([p], isindexed=false)
 
 # sampler = PGUSMMALA(
-#   3.,
+#   0.04,
 #   identitymala=false,
-#   update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 15, 0.),
+#   # update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 7., 0.18),
+#   update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 5., 0.18),
 #   transform=H -> softabs(H, 1000.),
 #   initupdatetensor=(true, false)
 # )
 
 sampler = PGUSMMALA(
-  1.,
+  0.26,
   identitymala=false,
-  # update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 12.5, 0.),
-  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot),
+  # update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 7., 0.18),
+  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 3., 0.),
   transform=H -> softabs(H, 1000.),
   initupdatetensor=(true, false)
 )
@@ -64,7 +66,8 @@ job = BasicMCJob(
   sampler,
   mcrange,
   v0,
-  tuner=AcceptanceRateMCTuner(0.6, score=x -> logistic_rate_score(x, 3.), verbose=false),
+  tuner=VanillaMCTuner(),
+  # tuner=AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verbose=false),
   outopts=outopts
 )
 
@@ -81,3 +84,7 @@ ess(chain, vtype=:bm)
 ess(chain, vtype=:bm)/runtime
 
 acceptance(chain)
+
+plot(x=collect(1:100000), y=chain.value[1, :], Geom.line)
+
+plot(x=collect(1:100000), y=[mean(chain.value[1, 1:i]) for i in 1:100000], Geom.line)

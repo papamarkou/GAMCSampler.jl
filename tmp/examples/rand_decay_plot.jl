@@ -21,6 +21,24 @@ myplot = plot(
     y=[exp_decay(i, nx, 15) for i in x],
     Geom.line,
     Theme(default_color=colorant"green")
+  ),
+  layer(
+    x=collect(x),
+    y=[exp_decay(i, nx, 4) for i in x],
+    Geom.line,
+    Theme(default_color=colorant"black")
+  ),
+  layer(
+    x=collect(x),
+    y=[exp_decay(i, nx, 3) for i in x],
+    Geom.line,
+    Theme(default_color=colorant"orange")
+  ),
+  layer(
+    x=collect(x),
+    y=[exp_decay(i, nx, 2) for i in x],
+    Geom.line,
+    Theme(default_color=colorant"purple")
   )
 )
 

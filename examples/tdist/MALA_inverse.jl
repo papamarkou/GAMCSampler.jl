@@ -1,4 +1,5 @@
 using Distributions
+using Gadfly
 using Lora
 using PGUManifoldMC
 
@@ -8,12 +9,12 @@ function C(n::Int, c::Float64)
   X
 end
 
-n = 15
+n = 20
 μ = zeros(n)
-Σ = C(n, 0.5)
+Σ = C(n, 0.9)
 ν = 30.
 
-Σt = 28*Σ/30
+Σt = (ν-2)*Σ/ν
 Σtinv = inv(Σt)
 
 function plogtarget(p::Vector, v::Vector)
@@ -25,7 +26,7 @@ function plogtarget(p::Vector, v::Vector)
   v-shdfhdim*log1p(dot(z, Σtinv*z)/ν)
 end
 
-v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
+v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
 
 p = BasicContMuvParameter(
   :p,
@@ -40,9 +41,9 @@ model = likelihood_model([p], isindexed=false)
 
 # Simulation 01
 
-sampler = MALA(1.)
+sampler = MALA(0.05)
 
-mcrange = BasicMCRange(nsteps=11000, burnin=1000)
+mcrange = BasicMCRange(nsteps=110000, burnin=10000)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
 
@@ -68,3 +69,7 @@ ess(chain, vtype=:bm)
 ess(chain, vtype=:bm)/runtime
 
 acceptance(chain)
+
+plot(x=collect(1:100000), y=chain.value[1, :], Geom.line)
+
+plot(x=collect(1:100000), y=[mean(chain.value[1, 1:i]) for i in 1:100000], Geom.line)

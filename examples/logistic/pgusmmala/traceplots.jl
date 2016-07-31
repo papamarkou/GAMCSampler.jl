@@ -44,4 +44,4 @@ traceplot = plot(
   Guide.title("")
 )
 
-draw(PDF(joinpath(OUTDIR, "logit_mala_traceplot.pdf"), 14cm, 7cm), traceplot)
+draw(PDF(joinpath(OUTDIR, "logit_pgusmmala_traceplot.pdf"), 14cm, 7cm), traceplot)

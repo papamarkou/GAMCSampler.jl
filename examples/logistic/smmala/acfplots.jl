@@ -33,4 +33,4 @@ acfplot = plot(
   Guide.title("")
 )
 
-draw(PDF(joinpath(OUTDIR, "logit_mala_acfplot.pdf"), 10cm, 7cm), acfplot)
+draw(PDF(joinpath(OUTDIR, "logit_smmala_acfplot.pdf"), 10cm, 7cm), acfplot)

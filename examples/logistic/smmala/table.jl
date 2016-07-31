@@ -26,7 +26,23 @@ results[:time] = mean(readdlm(joinpath(DATADIR, "times.csv"), ',', Float64))
 results[:efficiency] = minimum(results[:ess])/results[:time]
 
 writedlm(
+  joinpath(OUTDIR, "smmalasummary.csv"),
+  hcat(
+    results[:rate],
+    results[:ess],
+    results[:time],
+    results[:efficiency]
+  ),
+  ','
+)
+
+writedlm(
   joinpath(OUTDIR, "smmalasummary.txt"),
-  round(Float64[results[:rate] results[:ess] results[:time] results[:efficiency]], 2),
+  Any[
+    round(results[:rate], 2)
+    [Int64(i) for i in round(results[:ess])]
+    round(results[:time], 2)
+    round(results[:efficiency], 2)
+  ]',
   " & "
 )

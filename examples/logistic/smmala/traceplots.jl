@@ -11,7 +11,7 @@ nmcmc = 110000
 nburnin = 10000
 npostburnin = nmcmc-nburnin
 
-ci = 5
+ci = 6
 pi = 2
 
 chains = readdlm(joinpath(DATADIR, "chain"*lpad(string(ci), 2, 0)*".csv"), ',', Float64)

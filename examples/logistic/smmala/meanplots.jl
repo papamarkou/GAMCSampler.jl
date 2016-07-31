@@ -48,4 +48,4 @@ traceplot = plot(
   Guide.title("")
 )
 
-draw(PDF(joinpath(OUTDIR, "logit_mala_meanplot.pdf"), 14cm, 7cm), traceplot)
+draw(PDF(joinpath(OUTDIR, "logit_smmala_meanplot.pdf"), 14cm, 7cm), traceplot)

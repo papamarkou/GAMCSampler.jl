@@ -33,7 +33,7 @@ for (j in 1:nsamplerdirs) {
 
 cols <- c("green", "blue", "red")
 
-pdf(file=file.path(OUTDIR, "logit_traceplots.pdf"), width=10, height=6)
+# pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
 
 plot(
   1:nmeans,
@@ -73,4 +73,4 @@ legend(
   cex=1.7
 )
 
-dev.off()
+# dev.off()

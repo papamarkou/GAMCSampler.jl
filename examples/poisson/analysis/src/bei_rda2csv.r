@@ -4,8 +4,11 @@
 library(sp)
 library(raster)
 
+# Set environment variables
+DATADIR <- "../../data"
+
 # Load data
-load("bei.rda")
+load(file.path(DATADIR, "bei.rda"))
 
 # Visualize tree locations
 plot(
@@ -70,7 +73,7 @@ write.csv(
     elevation50=elevation50[],
     gradient50=gradient50[]
   ),
-  file="coarse_bei.csv",
+  file=file.path(DATADIR, "coarse_bei.csv"),
   quote=FALSE,
   row.names=FALSE
 )

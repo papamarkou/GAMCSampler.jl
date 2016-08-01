@@ -33,7 +33,7 @@ for (j in 1:nsamplerdirs) {
 
 cols <- c("green", "blue", "red")
 
-# pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
 
 plot(
   1:nmeans,
@@ -45,7 +45,16 @@ plot(
   xlab="",
   ylab="",
   cex.axis=1.8,
-  cex.lab=1.7
+  cex.lab=1.7,
+  yaxt="n"
+)
+
+axis(
+  2,
+  at=seq(0.4, 1.2, by=0.2),
+  labels=seq(0.4, 1.2, by=0.2),
+  cex.axis=1.8,
+  las=1
 )
 
 lines(
@@ -70,7 +79,9 @@ legend(
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,
-  cex=1.7
+  cex=1.5,
+  bty="n",
+  text.width=2000
 )
 
-# dev.off()
+dev.off()

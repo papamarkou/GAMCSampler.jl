@@ -28,7 +28,7 @@ plot(
   chains[, pi],
   type="l",
   ylim=c(-1.2, 3),
-  col="cyan4",
+  col="steelblue2",
   xlab="",
   ylab="",
   cex.axis=1.8,
@@ -48,7 +48,7 @@ lines(
   1:npostburnin,
   rep(chainmean, npostburnin),
   type="l",
-  col="red",
+  col="orangered1",
   lwd=2
 )
 

@@ -2,7 +2,8 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
-DATADIR = "data"
+DATADIR = "../../data"
+SUBDATADIR = "smmala"
 
 nchains = 10
 nmcmc = 110000
@@ -25,17 +26,23 @@ plogprior(p::Vector, v::Vector) = -0.5*(dot(p, p)/v[1]+length(p)*log(2*pi*v[1]))
 
 pgradlogtarget(p::Vector, v::Vector) = v[2]'*(v[3]-1./(1+exp(-v[2]*p)))-p/v[1]
 
+function ptensorlogtarget(p::Vector, v::Vector)
+  r = 1./(1+exp(-v[2]*p))
+  (v[2]'.*repmat((r.*(1-r))', length(p), 1))*v[2]+(eye(length(p))/v[1])
+end
+
 p = BasicContMuvParameter(
   :p,
   loglikelihood=ploglikelihood,
   logprior=plogprior,
   gradlogtarget=pgradlogtarget,
+  tensorlogtarget=ptensorlogtarget,
   nkeys=4
 )
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = MALA(0.02)
+sampler = SMMALA(0.02)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
@@ -53,7 +60,7 @@ while i <= nchains
     sampler,
     mcrange,
     v0,
-    tuner=AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), verbose=false),
+    tuner=AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verbose=false),
     outopts=outopts
   )
 
@@ -64,9 +71,9 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.5 < ratio < 0.65
-    writedlm(joinpath(DATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
-    writedlm(joinpath(DATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
+  if 0.65 < ratio < 0.75
+    writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
+    writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
     times[i] = runtime
     stepsizes[i] = job.sstate.tune.step
@@ -76,5 +83,5 @@ while i <= nchains
   end
 end
 
-writedlm(joinpath(DATADIR, "times.csv"), times, ',')
-writedlm(joinpath(DATADIR, "stepsizes.csv"), stepsizes, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), times, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "stepsizes.csv"), stepsizes, ',')

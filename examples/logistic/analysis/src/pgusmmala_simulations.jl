@@ -2,7 +2,8 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
-DATADIR = "data"
+DATADIR = "../../data"
+SUBDATADIR = "pgusmmala"
 
 nchains = 10
 nmcmc = 110000
@@ -76,8 +77,8 @@ while i <= nchains
   ratio = acceptance(chain)
 
   if 0.574 < ratio < 0.7
-    writedlm(joinpath(DATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
-    writedlm(joinpath(DATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
+    writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
+    writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
     times[i] = runtime
     stepsizes[i] = job.sstate.tune.step
@@ -87,5 +88,5 @@ while i <= nchains
   end
 end
 
-writedlm(joinpath(DATADIR, "times.csv"), times, ',')
-writedlm(joinpath(DATADIR, "stepsizes.csv"), stepsizes, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), times, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "stepsizes.csv"), stepsizes, ',')

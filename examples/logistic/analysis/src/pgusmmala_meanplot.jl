@@ -1,8 +1,9 @@
 using Gadfly
 using Lora
 
-DATADIR = "data"
-OUTDIR = "output"
+DATADIR = "../../data"
+SUBDATADIR = "pgusmmala"
+OUTDIR = "../output"
 
 npars = 4
 
@@ -15,7 +16,7 @@ nmeans = 10000
 ci = 6
 pi = 2
 
-chains = readdlm(joinpath(DATADIR, "chain"*lpad(string(ci), 2, 0)*".csv"), ',', Float64)
+chains = readdlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(ci), 2, 0)*".csv"), ',', Float64)
 
 chainmean = mean(chains[pi, :])
 
@@ -48,4 +49,4 @@ traceplot = plot(
   Guide.title("")
 )
 
-draw(PDF(joinpath(OUTDIR, "logit_smmala_meanplot.pdf"), 14cm, 7cm), traceplot)
+draw(PDF(joinpath(OUTDIR, "logit_pgusmmala_meanplot.pdf"), 14cm, 7cm), traceplot)

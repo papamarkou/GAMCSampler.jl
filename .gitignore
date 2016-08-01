@@ -1,10 +1,5 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-examples/logistic/mala/data
-examples/logistic/mala/output
-examples/logistic/output
-examples/logistic/pgusmmala/data
-examples/logistic/pgusmmala/output
-examples/logistic/smmala/data
-examples/logistic/smmala/output
+examples/logistic/data
+examples/logistic/analysis/output

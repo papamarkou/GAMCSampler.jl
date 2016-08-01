@@ -1,8 +1,9 @@
 using Gadfly
 using Lora
 
-DATADIR = "data"
-OUTDIR = "output"
+DATADIR = "../../data"
+SUBDATADIR = "mala"
+OUTDIR = "../output"
 
 npars = 4
 
@@ -14,7 +15,7 @@ npostburnin = nmcmc-nburnin
 ci = 6
 pi = 2
 
-chains = readdlm(joinpath(DATADIR, "chain"*lpad(string(ci), 2, 0)*".csv"), ',', Float64)
+chains = readdlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(ci), 2, 0)*".csv"), ',', Float64)
 
 chainmean = mean(chains[pi, :])
 

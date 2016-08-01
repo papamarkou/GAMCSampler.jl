@@ -3,8 +3,8 @@ library(stringr)
 
 SAMPLERDIRS <- c("mala", "smmala", "pgusmmala")
 
-DATADIR <- "data"
-OUTDIR <- "output"
+DATADIR <- "../../data"
+OUTDIR <- "../output"
 
 nsamplerdirs <- length(SAMPLERDIRS)
 
@@ -23,7 +23,7 @@ submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
 
 for (j in 1:nsamplerdirs) {
   chains <- t(fread(
-    file.path(SAMPLERDIRS[j], DATADIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
+    file.path(DATADIR, SAMPLERDIRS[j], paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
   ))
 
   for (i in 1:nmeans) {
@@ -33,7 +33,7 @@ for (j in 1:nsamplerdirs) {
 
 cols <- c("green", "blue", "red")
 
-# pdf(file=file.path(OUTDIR, "logistic_traceplots.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "logit_traceplots.pdf"), width=10, height=6)
 
 plot(
   1:nmeans,
@@ -73,4 +73,4 @@ legend(
   cex=1.7
 )
 
-# dev.off()
+dev.off()

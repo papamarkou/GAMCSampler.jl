@@ -2,8 +2,9 @@ using Gadfly
 using Lora
 using StatsBase
 
-DATADIR = "data"
-OUTDIR = "output"
+DATADIR = "../../data"
+SUBDATADIR = "pgusmmala"
+OUTDIR = "../output"
 
 npars = 4
 
@@ -18,7 +19,7 @@ pi = 2
 
 lags = 0:50
 
-chains = readdlm(joinpath(DATADIR, "chain"*lpad(string(ci), 2, 0)*".csv"), ',', Float64)
+chains = readdlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(ci), 2, 0)*".csv"), ',', Float64)
 
 cors = autocor(vec(chains[pi, :]), lags, demean=true)
 

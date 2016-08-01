@@ -1,7 +1,8 @@
 using Lora
 
-DATADIR = "data"
-OUTDIR = "output"
+DATADIR = "../../data"
+SUBDATADIR = "smmala"
+OUTDIR = "../output"
 
 npars = 4
 
@@ -14,19 +15,19 @@ essizes = Array(Float64, nchains, npars)
 results = Dict{Symbol, Any}()
 
 for i in 1:nchains
-  ratio[i] = acceptance(readdlm(joinpath(DATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), ',', Bool))
-  essizes[i, :] = ess(readdlm(joinpath(DATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), ',', Float64), 2)
+  ratio[i] = acceptance(readdlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), ',', Bool))
+  essizes[i, :] = ess(readdlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), ',', Float64), 2)
 
   println("Iteration ", i, " of ", nchains, " completed")
 end
 
 results[:rate] = mean(ratio)
 results[:ess] = mean(essizes, 1)
-results[:time] = mean(readdlm(joinpath(DATADIR, "times.csv"), ',', Float64))
+results[:time] = mean(readdlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), ',', Float64))
 results[:efficiency] = minimum(results[:ess])/results[:time]
 
 writedlm(
-  joinpath(OUTDIR, "smmalasummary.csv"),
+  joinpath(OUTDIR, "logit_smmala_summary.csv"),
   hcat(
     results[:rate],
     results[:ess],
@@ -37,7 +38,7 @@ writedlm(
 )
 
 writedlm(
-  joinpath(OUTDIR, "smmalasummary.txt"),
+  joinpath(OUTDIR, "logit_smmala_summary.txt"),
   Any[
     round(results[:rate], 2)
     [Int64(i) for i in round(results[:ess])]

@@ -7,7 +7,6 @@ OUTDIR = "../output"
 
 npars = 4
 
-nchains = 10
 nmcmc = 110000
 nburnin = 10000
 npostburnin = nmcmc-nburnin

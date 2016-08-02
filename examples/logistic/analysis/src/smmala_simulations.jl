@@ -22,13 +22,13 @@ function ploglikelihood(p::Vector, v::Vector)
   dot(Xp, v[3])-sum(log(1+exp(Xp)))
 end
 
-plogprior(p::Vector, v::Vector) = -0.5*(dot(p, p)/v[1]+length(p)*log(2*pi*v[1]))
+plogprior(p::Vector, v::Vector) = -0.5*(dot(p, p)/v[1]+npars*log(2*pi*v[1]))
 
 pgradlogtarget(p::Vector, v::Vector) = v[2]'*(v[3]-1./(1+exp(-v[2]*p)))-p/v[1]
 
 function ptensorlogtarget(p::Vector, v::Vector)
   r = 1./(1+exp(-v[2]*p))
-  (v[2]'.*repmat((r.*(1-r))', length(p), 1))*v[2]+(eye(length(p))/v[1])
+  broadcast(*, r.*(1-r), v[2])'*v[2]+(eye(npars)/v[1])
 end
 
 p = BasicContMuvParameter(

@@ -17,14 +17,14 @@ covariates = (covariates.-mean(covariates, 1))./repmat(std(covariates, 1), ndata
 outcome, = dataset("swiss", "status");
 outcome = vec(outcome);
 
-function ploglikelihood(p::Vector, v::Vector)
+function ploglikelihood(p::Vector{Float64}, v::Vector)
   Xp = v[2]*p
   dot(Xp, v[3])-sum(log(1+exp(Xp)))
 end
 
-plogprior(p::Vector, v::Vector) = -0.5*(dot(p, p)/v[1]+length(p)*log(2*pi*v[1]))
+plogprior(p::Vector{Float64}, v::Vector) = -0.5*(dot(p, p)/v[1]+npars*log(2*pi*v[1]))
 
-pgradlogtarget(p::Vector, v::Vector) = v[2]'*(v[3]-1./(1+exp(-v[2]*p)))-p/v[1]
+pgradlogtarget(p::Vector{Float64}, v::Vector) = v[2]'*(v[3]-1./(1+exp(-v[2]*p)))-p/v[1]
 
 p = BasicContMuvParameter(
   :p,

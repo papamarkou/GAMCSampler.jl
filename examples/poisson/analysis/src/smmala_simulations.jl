@@ -22,7 +22,8 @@ outcome = dataset[:, 1];
 
 function ploglikelihood(p::Vector{Float64}, v::Vector)
   Xp = v[2]*p
-  dot(Xp, v[3])-sum(exp(Xp))-sum(lfact(v[3]))
+  # dot(Xp, v[3])-sum(exp(Xp))-sum(lfact(v[3]))
+  dot(Xp, v[3])-sum(exp(Xp))
 end
 
 plogprior(p::Vector{Float64}, v::Vector) = -0.5*(dot(p, p)/v[1]+npars*log(2*pi*v[1]))

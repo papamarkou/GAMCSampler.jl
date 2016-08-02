@@ -3,7 +3,7 @@ using Lora
 using PGUManifoldMC
 
 DATADIR = "../../data"
-SUBDATADIR = "smmala"
+SUBDATADIR = "pgusmmala"
 
 nchains = 10
 nmcmc = 110000
@@ -43,7 +43,12 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = SMMALA(0.02)
+sampler = PGUSMMALA(
+  0.02,
+  identitymala=false,
+  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 7.),
+  initupdatetensor=(true, false)
+)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
@@ -61,7 +66,7 @@ while i <= nchains
     sampler,
     mcrange,
     v0,
-    tuner=AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verbose=false),
+    tuner=AcceptanceRateMCTuner(0.6, score=x -> logistic_rate_score(x, 3.), verbose=false),
     outopts=outopts
   )
 
@@ -77,7 +82,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.65 < ratio < 0.75
+  if 0.574 < ratio < 0.7
     writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

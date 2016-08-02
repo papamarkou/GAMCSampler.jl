@@ -12,7 +12,7 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
-ci <- 4
+ci <- 10
 pi <- 2
 
 chains <- t(fread(

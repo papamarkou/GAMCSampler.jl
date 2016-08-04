@@ -79,17 +79,38 @@ MuvPGUSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTune
   0
 )
 
+exp_decay(i::Integer, tot::Integer, a::Real=10., b::Real=0.) = (1-b)*exp(-a*i/tot)+b
+
+pow_decay(i::Integer, tot::Integer, a::Real=1e-3, b::Real=0.) = (1-b)*(a^(i/tot))+b
+
+lin_decay(i::Integer, tot::Integer, a::Real=1e-3, b::Real=0.) = (1-b)*(1/(1+a*i))+b
+
+quad_decay(i::Integer, tot::Integer, a::Real=1e-3, b::Real=0.) = (1-b)*(1/(1+a*abs2(i)))+b
+
 mala_only_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer) = sstate.presentupdatetensor = false
 
 smmala_only_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer) = sstate.presentupdatetensor = true
 
+mod_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, n::Integer=10) =
+  sstate.presentupdatetensor = mod(i, n) == 0 ? true : false
+
+cos_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=10., b::Real=0.2, c::Real=0.2) =
+  sstate.presentupdatetensor = rand(Bernoulli(b*cos(a*i*pi/tot)+c))
+
 rand_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, p::Real=0.5) =
   sstate.presentupdatetensor = rand(Bernoulli(p))
 
-exp_decay(i::Integer, tot::Integer, a::Real=10., b::Real=0.) = (1-b)*exp(-a*i/tot)+b
-
 rand_exp_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=10., b::Real=0.) =
   sstate.presentupdatetensor = rand(Bernoulli(exp_decay(i, tot, a, b)))
+
+rand_pow_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=1e-3, b::Real=0.) =
+  sstate.presentupdatetensor = rand(Bernoulli(pow_decay(i, tot, a, b)))
+
+rand_lin_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=1e-2, b::Real=0.) =
+  sstate.presentupdatetensor = rand(Bernoulli(lin_decay(i, tot, a, b)))
+
+rand_quad_decay_update!(sstate::MuvPGUSMMALAState, i::Integer, tot::Integer, a::Real=1e-5, b::Real=0.) =
+  sstate.presentupdatetensor = rand(Bernoulli(quad_decay(i, tot, a, b)))
 
 ### Metropolis-adjusted Langevin Algorithm (PGUSMMALA)
 

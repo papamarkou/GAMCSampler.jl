@@ -26,8 +26,15 @@ export
   MuvPGUSMMALAState,
   ess,
   exp_decay,
+  lin_decay,
   mala_only_update!,
+  mod_update!,
+  pow_decay,
+  quad_decay,
   rand_exp_decay_update!,
+  rand_lin_decay_update!,
+  rand_pow_decay_update!,
+  rand_quad_decay_update!,
   rand_update!,
   smmala_only_update!
 

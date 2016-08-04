@@ -2,17 +2,28 @@ using Distributions
 using Lora
 using PGUManifoldMC
 
+DATADIR = "../../data"
+SUBDATADIR = "smmala_forward"
+
+nchains = 10
+nmcmc = 110000
+nburnin = 10000
+
 function C(n::Int, c::Float64)
   X = eye(n)
   [(j <= n-i) ? X[i+j, i] = X[i, i+j] = c^j : nothing for i = 1:(n-1), j = 1:(n-1)]
   X
 end
 
-n = 15
-Σ = C(n, 0.5)
+n = 20
+μ = zeros(n)
+Σ = C(n, 0.9)
 ν = 30.
 
-plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(ν, zeros(n), (ν-2)*Σ/ν), p)
+Σt = (ν-2)*Σ/ν
+Σtinv = inv(Σt)
+
+plogtarget(p::Vector{Float64}, v::Vector) = logpdf(MvTDist(ν, zeros(n), (ν-2)*Σ/ν), p)
 
 p = BasicContMuvParameter(
   :p,
@@ -24,35 +35,46 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([p], isindexed=false)
 
-# Simulation 01
+sampler = SMMALA(0.25, H -> softabs(H, 1000.))
 
-sampler = SMMALA(1., softabs)
+mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
-mcrange = BasicMCRange(nsteps=110000, burnin=10000)
+outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
+times = Array(Float64, nchains)
+stepsizes = Array(Float64, nchains)
+i = 1
 
-outopts = Dict{Symbol, Any}(:monitor=>[:value, :logtarget, :gradlogtarget], :diagnostics=>[:accept])
+while i <= nchains
+  v0 = Dict(:p=>rand(Normal(0, 2), n))
 
-job = BasicMCJob(
-  model,
-  sampler,
-  mcrange,
-  v0,
-  tuner=AcceptanceRateMCTuner(0.6, score=x -> logistic_rate_score(x, 3.), verbose=false),
-  outopts=outopts
-)
+  job = BasicMCJob(
+    model,
+    sampler,
+    mcrange,
+    v0,
+    tuner=AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 0.3), verbose=false),
+    outopts=outopts
+  )
 
-tic()
-run(job)
-runtime = toc()
+  tic()
+  run(job)
+  runtime = toc()
 
-chain = output(job)
+  chain = output(job)
+  ratio = acceptance(chain)
 
-ppostmean = mean(chain)
+  if 0.65 < ratio < 0.75
+    writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
+    writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
-ess(chain, vtype=:bm)
+    times[i] = runtime
+    stepsizes[i] = job.sstate.tune.step
 
-ess(chain, vtype=:bm)/runtime
+    println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)
+    i += 1
+  end
+end
 
-acceptance(chain)
+writedlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), times, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "stepsizes.csv"), stepsizes, ',')

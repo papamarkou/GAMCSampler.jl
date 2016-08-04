@@ -1,7 +1,13 @@
 using Distributions
-# using Gadfly
 using Lora
 using PGUManifoldMC
+
+DATADIR = "../../data"
+SUBDATADIR = "mala"
+
+nchains = 10
+nmcmc = 110000
+nburnin = 10000
 
 function C(n::Int, c::Float64)
   X = eye(n)
@@ -17,7 +23,7 @@ n = 20
 Σt = (ν-2)*Σ/ν
 Σtinv = inv(Σt)
 
-function plogtarget(p::Vector, v::Vector)
+function plogtarget(p::Vector{Float64}, v::Vector)
   hdf = 0.5*ν
   hdim = 0.5*n
   shdfhdim = hdf+hdim
@@ -26,48 +32,57 @@ function plogtarget(p::Vector, v::Vector)
   v-shdfhdim*log1p(dot(z, Σtinv*z)/ν)
 end
 
-v0 = Dict(:p=>[-4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4, -4., 2., 3., 1., 2.4])
-
-p = BasicContMuvParameter(
-  :p,
-  logtarget=plogtarget,
-  nkeys=1,
-  autodiff=:reverse,
-  init=Any[(:p, v0[:p]), (:v, Any[v0[:p]])],
-  order=1
-)
-
-model = likelihood_model([p], isindexed=false)
-
 sampler = MALA(0.05)
 
-mcrange = BasicMCRange(nsteps=110000, burnin=10000)
+mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-job = BasicMCJob(
-  model,
-  sampler,
-  mcrange,
-  v0,
-  tuner=AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), verbose=false),
-  outopts=outopts
-)
+times = Array(Float64, nchains)
+stepsizes = Array(Float64, nchains)
+i = 1
 
-tic()
-run(job)
-runtime = toc()
+while i <= nchains
+  v0 = Dict(:p=>rand(Normal(0, 2), n))
 
-chain = output(job)
+  p = BasicContMuvParameter(
+    :p,
+    logtarget=plogtarget,
+    nkeys=1,
+    autodiff=:reverse,
+    init=Any[(:p, v0[:p]), (:v, Any[v0[:p]])],
+    order=1
+  )
 
-ppostmean = mean(chain)
+  model = likelihood_model([p], isindexed=false)
 
-essizes = ess(chain)
+  job = BasicMCJob(
+    model,
+    sampler,
+    mcrange,
+    v0,
+    tuner=AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), verbose=false),
+    outopts=outopts
+  )
 
-essizes/runtime
+  tic()
+  run(job)
+  runtime = toc()
 
-acceptance(chain)
+  chain = output(job)
+  ratio = acceptance(chain)
 
-# plot(x=collect(1:100000), y=chain.value[1, :], Geom.line)
+  if 0.5 < ratio < 0.65
+    writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
+    writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
-# plot(x=collect(1:100000), y=[mean(chain.value[1, 1:i]) for i in 1:100000], Geom.line)
+    times[i] = runtime
+    stepsizes[i] = job.sstate.tune.step
+
+    println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)
+    i += 1
+  end
+end
+
+writedlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), times, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "stepsizes.csv"), stepsizes, ',')

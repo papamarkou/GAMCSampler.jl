@@ -7,3 +7,5 @@ examples/poisson/data/mala
 examples/poisson/data/pgusmmala
 examples/poisson/data/smmala
 examples/poisson/analysis/output
+examples/tdist/data
+examples/tdist/analysis/output

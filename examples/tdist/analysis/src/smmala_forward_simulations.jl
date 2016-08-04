@@ -23,7 +23,7 @@ n = 20
 Σt = (ν-2)*Σ/ν
 Σtinv = inv(Σt)
 
-plogtarget(p::Vector{Float64}, v::Vector) = logpdf(MvTDist(ν, zeros(n), (ν-2)*Σ/ν), p)
+plogtarget(p::Vector, v::Vector) = logpdf(MvTDist(ν, zeros(n), (ν-2)*Σ/ν), p)
 
 p = BasicContMuvParameter(
   :p,

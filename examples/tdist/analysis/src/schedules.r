@@ -44,7 +44,7 @@ lines(
 
 lines(
   x,
-  quad_cool(x, ntot, 0.000002, 0),
+  quad_cool(x, ntot, 0.0000005, 0.1),
   col="blue"
 )
 
@@ -54,12 +54,12 @@ lines(
   col="purple"
 )
 
-# plot(
-#   x,
-#   0.1*cos(100*x*pi/ntot)+0.2,
-#   type="l",
-#   ylim=c(0, 1)
-# )
+plot(
+  x,
+  0.2*cos(100*x*pi/ntot)+0.3,
+  type="l",
+  ylim=c(0, 1)
+)
 # 
 # plot(
 #   x,

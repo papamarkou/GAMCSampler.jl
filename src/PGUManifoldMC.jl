@@ -21,12 +21,14 @@ import Lora:
   variate_form
 
 export
-  PGUSMMALA,
-  PGUSMMALAState,
-  MuvPGUSMMALAState,
+  PSMMALA,
+  PSMMALAState,
+  MuvPSMMALAState,
+  cos_update!,
   ess,
   exp_decay,
   lin_decay,
+  mahalanobis_update!,
   mala_only_update!,
   mod_update!,
   pow_decay,
@@ -38,8 +40,8 @@ export
   rand_update!,
   smmala_only_update!
 
-include("samplers/PGUSMMALA.jl")
-include("samplers/iterate/PGUSMMALA.jl")
+include("samplers/PSMMALA.jl")
+include("samplers/iterate/PSMMALA.jl")
 
 include("stats/ess.jl")
 

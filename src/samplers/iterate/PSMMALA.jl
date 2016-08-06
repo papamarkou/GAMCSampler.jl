@@ -32,7 +32,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
   push!(smmalapasttensorbody, :(
-      _job.sstate.oldcholinvtensor = _job.sstate.oldsqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})
+      _job.sstate.oldcholinvtensor = _job.sstate.sqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})
     )
   )
 
@@ -44,7 +44,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     smmalabody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.newsqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
     )
   )
 
@@ -77,7 +77,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.newfirstterm))
 
-  push!(smmalabody, :(_job.sstate.newcholinvtensor = _job.sstate.newsqrttunestep*chol(_job.sstate.newinvtensor, Val{:L})))
+  push!(smmalabody, :(_job.sstate.newcholinvtensor = _job.sstate.sqrttunestep*chol(_job.sstate.newinvtensor, Val{:L})))
 
   push!(smmalabody, :(
       _job.sstate.ratio -= (
@@ -159,7 +159,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
     push!(malabody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-    push!(malabody, :(_job.sstate.oldcholinvtensor = _job.sstate.oldsqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})))
+    push!(malabody, :(_job.sstate.oldcholinvtensor = _job.sstate.sqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})))
   else
     push!(malabody, :(
         if (!_job.sstate.pastupdatetensor && !_job.pstate.diagnosticvalues[1])
@@ -175,7 +175,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     malabody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.newsqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
     )
   )
 
@@ -270,8 +270,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
     if isa(job.tuner, AcceptanceRateMCTuner)
       push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner)))
-      push!(burninbody, :(_job.sstate.oldsqrttunestep = _job.sstate.newsqrttunestep))
-      push!(burninbody, :(_job.sstate.newsqrttunestep = sqrt(_job.sstate.tune.step)))
+      push!(burninbody, :(_job.sstate.sqrttunestep = sqrt(_job.sstate.tune.step)))
     end
 
     if job.tuner.verbose

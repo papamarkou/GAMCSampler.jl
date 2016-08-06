@@ -21,14 +21,18 @@ import Lora:
   variate_form
 
 export
+  # ASMMALA,
+  # ASMMALAState,
+  # MuvASMMALAState,
   PSMMALA,
   PSMMALAState,
   MuvPSMMALAState,
   cos_update!,
   ess,
   exp_decay,
+  in_mahalanobis_contour,
   lin_decay,
-  mahalanobis_update!,
+  mahalanobis_distance,
   mala_only_update!,
   mod_update!,
   pow_decay,
@@ -40,9 +44,12 @@ export
   rand_update!,
   smmala_only_update!
 
+# include("samplers/ASMMALA.jl")
 include("samplers/PSMMALA.jl")
+# include("samplers/iterate/ASMMALA.jl")
 include("samplers/iterate/PSMMALA.jl")
 
 include("stats/ess.jl")
+include("stats/mahanalobis.jl")
 
 end # module

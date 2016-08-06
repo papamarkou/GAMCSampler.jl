@@ -1,5 +1,7 @@
 function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
   result::Expr
+  update = []
+  noupdate = []
   burninbody = []
   malabody = []
   smmalapasttensorbody = []
@@ -15,14 +17,15 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     push!(body, :(_job.sstate.tune.proposed += 1))
   end
 
+  ######
+
   push!(body, :(
-      if _job.count == 0
-        _job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.tune.totproposed, _job.range.burnin)
-      else
-        _job.sampler.update!(_job.sstate, _job.pstate, _job.range.burnin+_job.count, _job.range.nsteps)
-      end
-    )
-  )
+    if _job.count == 0
+      _job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.tune.totproposed, _job.range.burnin)
+    else
+      _job.sampler.update!(_job.sstate, _job.pstate, _job.range.burnin+_job.count, _job.range.nsteps)
+    end
+  ))
 
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
@@ -36,10 +39,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
 
   push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-  push!(smmalapasttensorbody, :(
-      _job.sstate.oldcholinvtensor = _job.sstate.oldsqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})
-    )
-  )
+  push!(smmalapasttensorbody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
@@ -49,7 +49,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     smmalabody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.newsqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
     )
   )
 
@@ -82,7 +82,8 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.newfirstterm))
 
-  push!(smmalabody, :(_job.sstate.newcholinvtensor = _job.sstate.newsqrttunestep*chol(_job.sstate.newinvtensor, Val{:L})))
+  # push!(noupdate, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
+  push!(smmalabody, :(_job.sstate.newcholinvtensor = _job.sstate.sqrttunestep*chol(_job.sstate.newinvtensor, Val{:L})))
 
   push!(smmalabody, :(
       _job.sstate.ratio -= (
@@ -96,9 +97,6 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
       )
     )
   )
-
-  update = []
-  noupdate = []
 
   push!(update, :(_job.pstate.value = copy(_job.sstate.pstate.value)))
 
@@ -127,6 +125,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
   push!(update, :(_job.sstate.oldcholinvtensor = copy(_job.sstate.newcholinvtensor)))
 
   push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
+  # push!(noupdate, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
   push!(update, :(_job.pstate.logtarget = _job.sstate.pstate.logtarget))
 
@@ -157,126 +156,18 @@ function codegen(::Type{Val{:iterate}}, ::Type{PGUSMMALA}, job::BasicMCJob)
     )
   )
 
-  if job.sampler.identitymala
-    push!(malabody, :(_job.pstate.tensorlogtarget = eye(_job.pstate.size, _job.pstate.size)))
-
-    push!(malabody, :(_job.sstate.oldinvtensor = eye(_job.pstate.size, _job.pstate.size)))
-
-    push!(malabody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
-
-    push!(malabody, :(_job.sstate.oldcholinvtensor = _job.sstate.oldsqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})))
-  else
-    push!(malabody, :(
-        if (!_job.sstate.pastupdatetensor && !_job.pstate.diagnosticvalues[1])
-          _job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget
-        end
-      )
-    )
-  end
-
-  push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
-
-  push!(
-    malabody,
-    :(
-      _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.newsqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
-    )
-  )
-
-  push!(malabody, :(_job.parameter.uptogradlogtarget!(_job.sstate.pstate)))
-
-  push!(malabody, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
-
-  push!(
-    malabody,
-    :(
-      _job.sstate.ratio += (
-        0.5*(
-          logdet(_job.sstate.tune.step*_job.sstate.oldinvtensor)
-          +dot(
-            _job.sstate.pstate.value-_job.sstate.μ,
-            _job.pstate.tensorlogtarget*(_job.sstate.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.step
-        )
-      )
-    )
-  )
-
-  push!(malabody, :(_job.sstate.newfirstterm = _job.sstate.oldinvtensor*_job.sstate.pstate.gradlogtarget))
-
-  push!(malabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.newfirstterm))
-
-  push!(malabody, :(
-      _job.sstate.ratio -= (
-        0.5*(
-          logdet(_job.sstate.tune.step*_job.sstate.oldinvtensor)
-          +dot(
-            _job.pstate.value-_job.sstate.μ,
-            _job.pstate.tensorlogtarget*(_job.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.step
-        )
-      )
-    )
-  )
-
-  update = []
-  noupdate = []
-
-  push!(update, :(_job.pstate.value = copy(_job.sstate.pstate.value)))
-
-  push!(update, :(_job.pstate.gradlogtarget = copy(_job.sstate.pstate.gradlogtarget)))
-
-  if in(:gradloglikelihood, job.outopts[:monitor]) && job.parameter.gradloglikelihood! != nothing
-    push!(update, :(_job.pstate.gradloglikelihood = copy(_job.sstate.pstate.gradloglikelihood)))
-  end
-
-  if in(:gradlogprior, job.outopts[:monitor]) && job.parameter.gradlogprior! != nothing
-    push!(update, :(_job.pstate.gradlogprior = copy(_job.sstate.pstate.gradlogprior)))
-  end
-
-  push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
-
-  push!(update, :(_job.pstate.logtarget = _job.sstate.pstate.logtarget))
-
-  if in(:loglikelihood, job.outopts[:monitor]) && job.parameter.loglikelihood! != nothing
-    push!(update, :(_job.pstate.loglikelihood = _job.sstate.pstate.loglikelihood))
-  end
-
-  if in(:logprior, job.outopts[:monitor]) && job.parameter.logprior! != nothing
-    push!(update, :(_job.pstate.logprior = _job.sstate.pstate.logprior))
-  end
-
-  if in(:accept, job.outopts[:diagnostics])
-    push!(update, :(_job.pstate.diagnosticvalues[1] = true))
-    push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
-  end
-
-  if (isa(job.tuner, VanillaMCTuner) && job.tuner.verbose) || isa(job.tuner, AcceptanceRateMCTuner)
-    push!(update, :(_job.sstate.tune.accepted += 1))
-  end
-
-  push!(
-    malabody,
-    Expr(
-      :if,
-      :(_job.sstate.ratio > 0 || (_job.sstate.ratio > log(rand()))),
-      Expr(:block, update...),
-      Expr(:block, noupdate...)
-    )
-  )
+  push!(smmalabody, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 
   push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), Expr(:block, malabody...)))
 
-  push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
+  ######
 
   if (isa(job.tuner, VanillaMCTuner) && job.tuner.verbose) || isa(job.tuner, AcceptanceRateMCTuner)
     push!(burninbody, :(rate!(_job.sstate.tune)))
 
     if isa(job.tuner, AcceptanceRateMCTuner)
       push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner)))
-      push!(burninbody, :(_job.sstate.oldsqrttunestep = _job.sstate.newsqrttunestep))
-      push!(burninbody, :(_job.sstate.newsqrttunestep = sqrt(_job.sstate.tune.step)))
+      push!(burninbody, :(_job.sstate.sqrttunestep = sqrt(_job.sstate.tune.step)))
     end
 
     if job.tuner.verbose

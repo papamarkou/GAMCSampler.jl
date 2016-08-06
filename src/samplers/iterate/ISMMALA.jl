@@ -1,4 +1,4 @@
-function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
+function codegen(::Type{Val{:iterate}}, ::Type{ISMMALA}, job::BasicMCJob)
   result::Expr
   burninbody = []
   malabody = []
@@ -8,16 +8,16 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   vform = variate_form(job.pstate)
   if vform != Multivariate
-    error("Only multivariate parameter states allowed in PSMMALA code generation")
+    error("Only multivariate parameter states allowed in ISMMALA code generation")
   end
+
+  push!(body, :(_job.sstate.count += 1))
 
   if (isa(job.tuner, VanillaMCTuner) && job.tuner.verbose) || isa(job.tuner, AcceptanceRateMCTuner)
     push!(body, :(_job.sstate.tune.proposed += 1))
   end
 
   push!(body, :(_job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)))
-
-  push!(body, :(_job.sstate.count += 1))
 
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 

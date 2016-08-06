@@ -106,6 +106,10 @@ immutable ASMMALA <: LMCSampler
   end
 end
 
+mahalanobis_update!(sstate::MuvASMMALAState, pstate::ParameterState{Continuous, Multivariate}, a::Real=0.95) =
+  sstate.presentupdatetensor =
+    !in_mahalanobis_contour(sstate.pstate.value, sstate.p0value, pstate.tensorlogtarget/sstate.tune.step, pstate.size)
+
 ASMMALA(
   driftstep::Real=1.;
   identitymala::Bool=false,

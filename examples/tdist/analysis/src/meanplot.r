@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala_reverse", "asmmala")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "ismmala", "asmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -29,7 +29,7 @@ for (j in 1:nsamplerdirs) {
   }
 }
 
-cols <- c("green", "blue", "red")
+cols <- c("green", "blue", "orange", "red")
 
 pdf(file=file.path(OUTDIR, "tdist_meanplot.pdf"), width=10, height=6)
 
@@ -71,11 +71,19 @@ lines(
   lwd=2
 )
 
+lines(
+  1:nmeans,
+  submeans[, 4],
+  type="l",
+  col=cols[4],
+  lwd=2
+)
+
 legend(
   "topright",
-  c("MALA", "SMMALA", "ASMMALA"),
-  lty=c(1, 1, 1),
-  lwd=c(5, 5, 5),
+  c("MALA", "SMMALA", "ISMMALA", "ASMMALA"),
+  lty=c(1, 1, 1, 1),
+  lwd=c(5, 5, 5, 5),
   col=cols,
   cex=1.5,
   bty="n",

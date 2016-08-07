@@ -3,7 +3,7 @@ using Lora
 using PGUManifoldMC
 
 DATADIR = "../../data"
-SUBDATADIR = "ismmala"
+SUBDATADIR = "psmmala"
 
 nchains = 10
 nmcmc = 110000
@@ -32,7 +32,7 @@ function plogtarget(p::Vector{Float64}, v::Vector)
   v-shdfhdim*log1p(dot(z, Σtinv*z)/ν)
 end
 
-sampler = ISMMALA(
+sampler = PSMMALA(
   0.5,
   identitymala=false,
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 7., 0.05),

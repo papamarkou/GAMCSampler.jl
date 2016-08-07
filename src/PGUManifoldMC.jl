@@ -21,12 +21,9 @@ import Lora:
   variate_form
 
 export
-  ASMMALA,
-  ASMMALAState,
-  ISMMALA,
-  ISMMALAState,
-  MuvASMMALAState,
-  MuvISMMALAState,
+  MuvPSMMALAState,
+  PSMMALA,
+  PSMMALAState,
   cos_update!,
   ess,
   exp_decay,
@@ -45,12 +42,7 @@ export
   rand_update!,
   smmala_only_update!
 
-include("samplers/ASMMALA.jl")
-include("samplers/ISMMALA.jl")
-include("samplers/iterate/ASMMALA.jl")
-include("samplers/iterate/ISMMALA.jl")
-
-include("stats/ess.jl")
-include("stats/mahanalobis.jl")
+include("samplers/PSMMALA.jl")
+include("samplers/iterate/PSMMALA.jl")
 
 end # module

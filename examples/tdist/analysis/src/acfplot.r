@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala_reverse", "ismmala", "asmmala")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "psmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -23,13 +23,13 @@ for (j in 1:nsamplerdirs) {
   chains <- t(fread(
     file.path(DATADIR, SAMPLERDIRS[j], paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
   ))
-  
+
   cors[, j] <- acf(chains[, pi], lag.max=maxlag, demean=TRUE, plot=FALSE)$acf
 }
 
 sqrtnpostburnin <- sqrt(npostburnin)
 
-cols <- c("green", "blue", "orange", "red")
+cols <- c("green", "blue", "red")
 
 pdf(file=file.path(OUTDIR, "tdist_acfplot.pdf"), width=10, height=6)
 
@@ -74,20 +74,11 @@ lines(
   pch=20
 )
 
-lines(
-  0:maxlag,
-  cors[, 4],
-  type="o",
-  col=cols[4],
-  lwd=2,
-  pch=20
-)
-
 legend(
   36, 0.6,
-  c("MALA", "SMMALA", "ISMMALA", "ASMMALA"),
-  lty=c(1, 1, 1, 1),
-  lwd=c(5, 5, 5, 5),
+  c("MALA", "SMMALA", "PSMMALA"),
+  lty=c(1, 1, 1),
+  lwd=c(5, 5, 5),
   col=cols,
   cex=1.5,
   bty="n"

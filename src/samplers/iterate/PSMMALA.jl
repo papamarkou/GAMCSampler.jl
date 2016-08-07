@@ -1,4 +1,4 @@
-function codegen(::Type{Val{:iterate}}, ::Type{ASMMALA}, job::BasicMCJob)
+function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   result::Expr
   burninbody = []
   malabody = []
@@ -8,7 +8,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{ASMMALA}, job::BasicMCJob)
 
   vform = variate_form(job.pstate)
   if vform != Multivariate
-    error("Only multivariate parameter states allowed in ASMMALA code generation")
+    error("Only multivariate parameter states allowed in PSMMALA code generation")
   end
 
   push!(body, :(_job.sstate.count += 1))
@@ -17,19 +17,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{ASMMALA}, job::BasicMCJob)
     push!(body, :(_job.sstate.tune.proposed += 1))
   end
 
-  ###
-
-  push!(body, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
-
-  push!(
-    body,
-    :(
-      _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
-    )
-  )
-
-  push!(body, :(_job.sampler.update!(_job.sstate, _job.pstate)))
+  push!(body, :(_job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)))
 
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
@@ -43,14 +31,22 @@ function codegen(::Type{Val{:iterate}}, ::Type{ASMMALA}, job::BasicMCJob)
 
   push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-  push!(smmalapasttensorbody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
-
   push!(smmalapasttensorbody, :(
       _job.sstate.oldcholinvtensor = _job.sstate.sqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})
     )
   )
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
+
+  push!(smmalabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
+
+  push!(
+    smmalabody,
+    :(
+      _job.sstate.pstate.value =
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+    )
+  )
 
   push!(smmalabody, :(_job.parameter.uptotensorlogtarget!(_job.sstate.pstate)))
 
@@ -156,16 +152,12 @@ function codegen(::Type{Val{:iterate}}, ::Type{ASMMALA}, job::BasicMCJob)
     )
   )
 
-  push!(smmalabody, :(_job.sstate.p0value = copy(_job.pstate.value)))
-
   if job.sampler.identitymala
     push!(malabody, :(_job.pstate.tensorlogtarget = eye(_job.pstate.size, _job.pstate.size)))
 
     push!(malabody, :(_job.sstate.oldinvtensor = eye(_job.pstate.size, _job.pstate.size)))
 
     push!(malabody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
-
-    push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
 
     push!(malabody, :(_job.sstate.oldcholinvtensor = _job.sstate.sqrttunestep*chol(_job.sstate.oldinvtensor, Val{:L})))
   else
@@ -176,6 +168,16 @@ function codegen(::Type{Val{:iterate}}, ::Type{ASMMALA}, job::BasicMCJob)
       )
     )
   end
+
+  push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.step*_job.sstate.oldfirstterm))
+
+  push!(
+    malabody,
+    :(
+      _job.sstate.pstate.value =
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+    )
+  )
 
   push!(malabody, :(_job.parameter.uptogradlogtarget!(_job.sstate.pstate)))
 

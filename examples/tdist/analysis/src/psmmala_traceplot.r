@@ -2,7 +2,7 @@ library(data.table)
 library(stringr)
 
 DATADIR <- "../../data"
-SUBDATADIR <- "ismmala"
+SUBDATADIR <- "psmmala"
 OUTDIR <- "../output"
 
 nmcmc <- 110000
@@ -19,7 +19,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, "tdist_ismmala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "tdist_psmmala_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,

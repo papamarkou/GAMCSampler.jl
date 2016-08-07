@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala", "pgusmmala")
+SAMPLERDIRS <- c("mala", "smmala", "psmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"

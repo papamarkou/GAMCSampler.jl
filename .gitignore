@@ -4,7 +4,7 @@
 examples/logistic/data
 examples/logistic/analysis/output
 examples/poisson/data/mala
-examples/poisson/data/pgusmmala
+examples/poisson/data/psmmala
 examples/poisson/data/smmala
 examples/poisson/analysis/output
 examples/tdist/data

@@ -24,9 +24,15 @@ log_cool <- function(i, ntot, a, b) {
 ntot <- 10000
 x <- seq(0, ntot, by=1)
 
+# plot(
+#   x,
+#   pow_cool(x, ntot, 0.001, 0),
+#   type="l"
+# )
+
 plot(
   x,
-  pow_cool(x, ntot, 0.001, 0),
+  exp_cool(x, ntot, 3, 0),
   type="l"
 )
 
@@ -44,7 +50,7 @@ lines(
 
 lines(
   x,
-  quad_cool(x, ntot, 0.0000005, 0.1),
+  quad_cool(x, ntot, 0.0000002, 0.05),
   col="blue"
 )
 
@@ -54,18 +60,18 @@ lines(
   col="purple"
 )
 
-plot(
-  x,
-  0.2*cos(100*x*pi/ntot)+0.3,
-  type="l",
-  ylim=c(0, 1)
-)
-# 
 # plot(
 #   x,
-#   ((exp(-5*x/ntot)+0.05*cos(100*x*pi/ntot))+0.05)/1.1,
-#   type="l"
+#   0.2*cos(100*x*pi/ntot)+0.3,
+#   type="l",
+#   ylim=c(0, 1)
 # )
+# 
+plot(
+  x,
+  ((exp(-5*x/ntot)+0.05*cos(100*x*pi/ntot))+0.05)/1.1,
+  type="l"
+)
 # 
 # plot(
 #   seq(-1, 1, by=0.01),

@@ -33,7 +33,7 @@ function plogtarget(p::Vector{Float64}, v::Vector)
 end
 
 sampler = ISMMALA(
-  0.45,
+  0.5,
   identitymala=false,
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 7., 0.05),
   transform=H -> softabs(H, 1000.),
@@ -46,6 +46,7 @@ outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
 times = Array(Float64, nchains)
 stepsizes = Array(Float64, nchains)
+nupdates = Array(Int64, nchains)
 i = 1
 
 while i <= nchains
@@ -78,17 +79,21 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.6 < ratio < 0.9
+  if 0.85 < ratio < 0.92
     writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
     times[i] = runtime
     stepsizes[i] = job.sstate.tune.step
+    nupdates[i] = job.sstate.updatetensorcount
 
     println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)
     i += 1
+  else
+    println("Iteration ", i, " of ", nchains, " ignored with acceptance ratio ", ratio)
   end
 end
 
 writedlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), times, ',')
 writedlm(joinpath(DATADIR, SUBDATADIR, "stepsizes.csv"), stepsizes, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "nupdates.csv"), nupdates, ',')

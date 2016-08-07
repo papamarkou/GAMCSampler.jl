@@ -1,7 +1,7 @@
 using Lora
 
 DATADIR = "../../data"
-SUBDATADIR = "pgusmmala"
+SUBDATADIR = "psmmala"
 OUTDIR = "../output"
 
 npars = 4
@@ -27,7 +27,7 @@ results[:time] = mean(readdlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), ',', F
 results[:efficiency] = minimum(results[:ess])/results[:time]
 
 writedlm(
-  joinpath(OUTDIR, "logit_pgusmmala_summary.csv"),
+  joinpath(OUTDIR, "logit_psmmala_summary.csv"),
   hcat(
     results[:rate],
     results[:ess],
@@ -38,7 +38,7 @@ writedlm(
 )
 
 writedlm(
-  joinpath(OUTDIR, "logit_pgusmmala_summary.txt"),
+  joinpath(OUTDIR, "logit_psmmala_summary.txt"),
   Any[
     round(results[:rate], 2)
     [Int64(i) for i in round(results[:ess])]

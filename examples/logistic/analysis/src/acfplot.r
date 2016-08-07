@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala", "pgusmmala")
+SAMPLERDIRS <- c("mala", "smmala", "psmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -16,7 +16,7 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 maxlag <- 40
-ci <- 10
+ci <- 8
 pi <- 2
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)

@@ -3,7 +3,7 @@ using Lora
 using PGUManifoldMC
 
 DATADIR = "../../data"
-SUBDATADIR = "pgusmmala"
+SUBDATADIR = "psmmala"
 
 nchains = 10
 nmcmc = 110000
@@ -42,10 +42,10 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = PGUSMMALA(
+sampler = PSMMALA(
   0.02,
   identitymala=false,
-  update=(sstate, i, tot) -> rand_exp_decay_update!(sstate, i, tot, 7.),
+  update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 7.),
   initupdatetensor=(true, false)
 )
 
@@ -55,6 +55,7 @@ outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
 times = Array(Float64, nchains)
 stepsizes = Array(Float64, nchains)
+nupdates = Array(Int64, nchains)
 i = 1
 
 while i <= nchains
@@ -76,12 +77,13 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.574 < ratio < 0.7
+  if 0.6 < ratio < 0.7
     writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
     times[i] = runtime
     stepsizes[i] = job.sstate.tune.step
+    nupdates[i] = job.sstate.updatetensorcount
 
     println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)
     i += 1
@@ -90,3 +92,4 @@ end
 
 writedlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), times, ',')
 writedlm(joinpath(DATADIR, SUBDATADIR, "stepsizes.csv"), stepsizes, ',')
+writedlm(joinpath(DATADIR, SUBDATADIR, "nupdates.csv"), nupdates, ',')

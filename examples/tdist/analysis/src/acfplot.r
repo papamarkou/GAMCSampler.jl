@@ -1,14 +1,12 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala_reverse", "pgusmmala")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "asmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
 
 nsamplerdirs <- length(SAMPLERDIRS)
-
-npars <- 4
 
 nchains <- 10
 nmcmc <- 110000
@@ -16,7 +14,7 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 maxlag <- 50
-ci <- 9
+ci <- 7
 pi <- 18
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)
@@ -78,7 +76,7 @@ lines(
 
 legend(
   36, 0.6,
-  c("MALA", "SMMALA", "PSMMALA"),
+  c("MALA", "SMMALA", "ASMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,

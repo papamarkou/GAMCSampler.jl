@@ -1,14 +1,12 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala_reverse", "pgusmmala")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "asmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
 
 nsamplerdirs <- length(SAMPLERDIRS)
-
-npars <- 4
 
 nchains <- 10
 nmcmc <- 110000
@@ -16,7 +14,7 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 20000
-ci <- 9
+ci <- 7
 pi <- 18
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -39,7 +37,7 @@ plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(-0.7, 1.1),
+  ylim=c(-0.8, 0.8),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -51,8 +49,8 @@ plot(
 
 axis(
   2,
-  at=c(-0.7, 0, 0.7),
-  labels=c(-0.7, 0, 0.7),
+  at=c(-0.8, 0, 0.8),
+  labels=c(-0.8, 0, 0.8),
   cex.axis=1.8,
   las=1
 )
@@ -75,7 +73,7 @@ lines(
 
 legend(
   "topright",
-  c("MALA", "SMMALA", "PSMMALA"),
+  c("MALA", "SMMALA", "ASMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,

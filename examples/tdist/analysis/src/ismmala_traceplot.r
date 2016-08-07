@@ -5,14 +5,12 @@ DATADIR <- "../../data"
 SUBDATADIR <- "ismmala"
 OUTDIR <- "../output"
 
-npars <- 4
-
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
-ci <- 9
+ci <- 7
 pi <- 18
 
 chains <- t(fread(

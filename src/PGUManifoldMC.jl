@@ -24,6 +24,7 @@ export
   MuvPSMMALAState,
   PSMMALA,
   PSMMALAState,
+  PSMMALAMCTune,
   cos_update!,
   ess,
   exp_decay,
@@ -42,6 +43,7 @@ export
   rand_update!,
   smmala_only_update!
 
+include("tuners/PSMMALAMCTuner.jl")
 include("samplers/PSMMALA.jl")
 include("samplers/iterate/PSMMALA.jl")
 

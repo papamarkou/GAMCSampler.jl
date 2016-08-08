@@ -248,8 +248,12 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
   end
 
-  if (isa(job.tuner, VanillaMCTuner) && job.tuner.verbose)
-    push!(update, :(_job.sstate.tune.accepted += 1))
+  if job.tuner.totaltuner.verbose
+    push!(update, :(_job.sstate.tune.totaltune.accepted += 1))
+  end
+
+  if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+    push!(update, :(_job.sstate.tune.malatune.accepted += 1))
   end
 
   push!(
@@ -266,95 +270,83 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 
-  ### ~~~
-
-  if (isa(job.tuner, VanillaMCTuner) && job.tuner.verbose)
-    push!(burninbody, :(rate!(_job.sstate.tune)))
-
-    if job.tuner.verbose
-      fmt_iter = format_iteration(ndigits(job.range.burnin))
-      fmt_perc = format_percentage()
-
-      push!(burninbody, :(println(
-        "Burnin iteration ",
-        $(fmt_iter)(_job.sstate.tune.totproposed),
-        " of ",
-        _job.range.burnin,
-        ": ",
-        $(fmt_perc)(100*_job.sstate.tune.rate),
-        " % acceptance rate"
-      )))
-    end
-
-    push!(burninbody, :(reset_burnin!(_job.sstate.tune)))
-
-    push!(body, Expr(
-      :if,
-      :(_job.sstate.tune.totproposed <= _job.range.burnin && mod(_job.sstate.tune.proposed, _job.tuner.period) == 0),
-      Expr(:block, burninbody...)
-    ))
+  if job.tuner.totaltuner.verbose
+    push!(burninbody, accepted!(_job.sstate.tune))
+    push!(burninbody, proposed!(_job.sstate.tune))
+    push!(burninbody, totrate!(_job.sstate.tune))
   end
 
-  ### ~~~
-
-  ###
-
-  push!(
-    smmalabody,
-    Expr(
-      :if,
-      :(_job.sstate.ratio > 0 || (_job.sstate.ratio > log(rand()))),
-      Expr(:block, update...),
-      Expr(:block, noupdate...)
-    )
-  )
-
-  if (
-      (isa(job.tuner.smmalatuner, VanillaMCTuner) && job.tuner.smmalatuner.verbose) ||
-      isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
-    )
+  if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
     push!(burninbody, :(rate!(_job.sstate.tune.smmalatune)))
+  end
 
-    push!(burninbody, :(rate!(_job.sstate.tune.totaltune)))
+  if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(rate!(_job.sstate.tune.malatune)))
+  end
 
-    if job.tuner.smmalatuner.verbose
-      fmt_iter = format_iteration(ndigits(job.range.burnin))
-      fmt_perc = format_percentage()
+  if job.tuner.totaltuner.verbose || job.tuner.smmalaltuner.verbose || job.tuner.malaltuner.verbose
+    fmt_iter = format_iteration(ndigits(job.range.burnin))
+    fmt_perc = format_percentage()
 
+    push!(burninbody, :(println(
+      "Burnin iteration ",
+      $(fmt_iter)(_job.sstate.totaltune.totproposed),
+      " out of ",
+      _job.range.burnin,
+      "..."
+    )))
+
+    if job.tuner.totaltuner.verbose
       push!(burninbody, :(println(
-        "Burnin iteration ",
-        $(fmt_iter)(_job.sstate.totaltune.totproposed),
-        " out of ",
-        _job.range.burnin,
-        ": ",
-        $(fmt_perc)(100*_job.sstate.totaltune.rate),
-        " % overall acceptance rate"
-      )))
-
-      push!(burninbody, :(println(
-        "  SMMALA burnin iteration ",
-        $(fmt_iter)(_job.sstate.smmalatune.totproposed),
-        " out of ",
-        $(fmt_iter)(_job.sstate.totaltune.totproposed),
-        ": ",
-        $(fmt_perc)(100*_job.sstate.smmalatune.rate),
-        " % SMMALA acceptance rate"
+        "  Overall: ",
+        $(fmt_iter)(_job.sstate.totaltune.accepted),
+        " accepted out of ",
+        $(fmt_iter)(_job.sstate.totaltune.proposed),
+        " proposed, acceptance rate "
+        $(fmt_perc)(100*_job.sstate.totaltune.rate)
       )))
     end
 
-    push!(burninbody, :(reset_burnin!(_job.sstate.tune)))
+    if job.tuner.smmalaltuner.verbose
+      push!(burninbody, :(println(
+        "  SMMALA: ",
+        $(fmt_iter)(_job.sstate.smmalatune.accepted),
+        " accepted out of ",
+        $(fmt_iter)(_job.sstate.smmalatune.proposed),
+        " proposed, acceptance rate "
+        $(fmt_perc)(100*_job.sstate.smmalatune.rate)
+      )))
+    end
 
-    push!(body, Expr(
-      :if,
-      :(
-        _job.sstate.totaltune.totproposed <= _job.range.burnin &&
-        mod(_job.sstate.smmalatune.proposed, _job.tuner.smmalatuner.period) == 0
-      ),
-      Expr(:block, burninbody...)
-    ))
+    if job.tuner.malaltuner.verbose
+      push!(burninbody, :(println(
+        "  MALA: ",
+        $(fmt_iter)(_job.sstate.malatune.accepted),
+        " accepted out of ",
+        $(fmt_iter)(_job.sstate.malatune.proposed),
+        " proposed, acceptance rate "
+        $(fmt_perc)(100*_job.sstate.malatune.rate)
+      )))
+    end
   end
 
-  ###
+  if isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(tune!(_job.sstate.tune.smmalatune, job.tuner.smmalatuner)))
+  end
+
+  if isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(tune!(_job.sstate.tune.malatune, job.tuner.malatuner)))
+  end
+
+  if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(reset_burnin!(_job.sstate.tune.smmalatune)))
+  end
+
+  if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(reset_burnin!(_job.sstate.tune.malatune)))
+  end
+
+  push!(body, Expr(:if, :(_job.sstate.totaltune.totproposed <= _job.range.burnin), Expr(:block, burninbody...)))
 
   if !job.plain
     push!(body, :(produce()))

@@ -15,8 +15,7 @@ type MuvPSMMALAState <: PSMMALAState
   μ::RealVector
   newinvtensor::RealMatrix
   oldinvtensor::RealMatrix
-  newcholinvtensor::RealLowerTriangular
-  oldcholinvtensor::RealLowerTriangular
+  cholinvtensor::RealLowerTriangular
   newfirstterm::RealVector
   oldfirstterm::RealVector
   presentupdatetensor::Bool
@@ -33,8 +32,7 @@ type MuvPSMMALAState <: PSMMALAState
     μ::RealVector,
     newinvtensor::RealMatrix,
     oldinvtensor::RealMatrix,
-    newcholinvtensor::RealLowerTriangular,
-    oldcholinvtensor::RealLowerTriangular,
+    cholinvtensor::RealLowerTriangular,
     newfirstterm::RealVector,
     oldfirstterm::RealVector,
     presentupdatetensor::Bool,
@@ -56,8 +54,7 @@ type MuvPSMMALAState <: PSMMALAState
       μ,
       newinvtensor,
       oldinvtensor,
-      newcholinvtensor,
-      oldcholinvtensor,
+      cholinvtensor,
       newfirstterm,
       oldfirstterm,
       presentupdatetensor,
@@ -78,7 +75,6 @@ MuvPSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerS
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
-  RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
   RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size),
@@ -238,7 +234,7 @@ function sampler_state(
   sstate.sqrtsmmalastep = sqrt(sampler.smmalastep)
   sstate.sqrtmalastep = sqrt(sampler.malastep)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
-  sstate.oldcholinvtensor = chol(sstate.oldinvtensor, Val{:L})
+  sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
   sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
   sstate
@@ -272,7 +268,7 @@ function reset!(
   sstate.sqrtsmmalastep = sqrt(sampler.smmalastep)
   sstate.sqrtmalastep = sqrt(sampler.malastep)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
-  sstate.oldcholinvtensor = chol(sstate.oldinvtensor, Val{:L})
+  sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
   sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
 end

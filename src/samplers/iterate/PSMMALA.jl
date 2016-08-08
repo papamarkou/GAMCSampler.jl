@@ -76,8 +76,6 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sampler.smmalastep*_job.sstate.newfirstterm))
 
-  push!(smmalabody, :(_job.sstate.newcholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
-
   push!(smmalabody, :(
       _job.sstate.ratio -= (
         0.5*(
@@ -118,7 +116,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(update, :(_job.sstate.oldinvtensor = copy(_job.sstate.newinvtensor)))
 
-  push!(update, :(_job.sstate.oldcholinvtensor = copy(_job.sstate.newcholinvtensor)))
+  push!(update, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
 
   push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
 

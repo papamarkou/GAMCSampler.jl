@@ -65,7 +65,7 @@ type MuvPSMMALAState <: PSMMALAState
   end
 end
 
-MuvPSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerState=BasicMCTune()) =
+MuvPSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerState=PSMMALAMCTune()) =
   MuvPSMMALAState(
   pstate,
   tune,
@@ -222,7 +222,12 @@ end
 
 ## Initialize PSMMALA state
 
-tuner_state(sampler::LMCSampler, tuner::VanillaMCTuner) = BasicMCTune(1., 0, 0, tuner.period)
+tuner_state(sampler::PSMMALA, tuner::PSMMALAMCTuner) =
+  PSMMALAMCTune(
+    BasicMCTune(smmalastep, 0, 0, tuner.smmalatuner.period),
+    BasicMCTune(malastep, 0, 0, tuner.malatuner.period),
+    BasicMCTune(1., 0, 0, tuner.totaltuner.period)
+  )
 
 function sampler_state(
   sampler::PSMMALA,

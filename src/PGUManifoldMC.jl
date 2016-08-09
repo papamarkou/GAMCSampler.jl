@@ -18,6 +18,7 @@ import Lora:
   initialize!,
   reset!,
   sampler_state,
+  tuner_state,
   variate_form
 
 export
@@ -25,6 +26,7 @@ export
   PSMMALA,
   PSMMALAState,
   PSMMALAMCTune,
+  PSMMALAMCTuner,
   cos_update!,
   ess,
   exp_decay,

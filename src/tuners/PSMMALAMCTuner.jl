@@ -17,3 +17,13 @@ function reset_totburnin!(tune::PSMMALAMCTune)
   tune.totaltune.totproposed += (tune.smmalatune.totproposed+tune.malatune.totproposed)
   (tune.accepted, tune.proposed, tune.rate) = (0, 0, NaN)
 end
+
+immutable PSMMALAMCTuner <: MCTuner
+  smmalatuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}
+  malatuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}
+  totaltuner::VanillaMCTuner
+end
+
+Base.show(io::IO, tuner::PSMMALAMCTuner) = print(io, "PSMMALAMCTuner")
+
+Base.writemime(io::IO, ::MIME"text/plain", tuner::PSMMALAMCTuner) = show(io, tuner)

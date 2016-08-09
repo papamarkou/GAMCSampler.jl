@@ -45,7 +45,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
-  push!(smmalabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sampler.smmalastep*_job.sstate.oldfirstterm))
+  push!(smmalabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.smmalatune.step*_job.sstate.oldfirstterm))
 
   push!(
     smmalabody,
@@ -70,11 +70,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     :(
       _job.sstate.ratio += (
         0.5*(
-          logdet(_job.sampler.smmalastep*_job.sstate.oldinvtensor)
+          logdet(_job.sstate.tune.smmalatune.step*_job.sstate.oldinvtensor)
           +dot(
             _job.sstate.pstate.value-_job.sstate.μ,
             _job.pstate.tensorlogtarget*(_job.sstate.pstate.value-_job.sstate.μ)
-          )/_job.sampler.smmalastep
+          )/_job.sstate.tune.smmalatune.step
         )
       )
     )
@@ -82,16 +82,19 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, :(_job.sstate.newfirstterm = _job.sstate.newinvtensor*_job.sstate.pstate.gradlogtarget))
 
-  push!(smmalabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sampler.smmalastep*_job.sstate.newfirstterm))
+  push!(
+    smmalabody,
+    :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.smmalatune.step*_job.sstate.newfirstterm)
+  )
 
   push!(smmalabody, :(
       _job.sstate.ratio -= (
         0.5*(
-          logdet(_job.sampler.smmalastep*_job.sstate.newinvtensor)
+          logdet(_job.sstate.tune.smmalatune.step*_job.sstate.newinvtensor)
           +dot(
             _job.pstate.value-_job.sstate.μ,
             _job.sstate.pstate.tensorlogtarget*(_job.pstate.value-_job.sstate.μ)
-          )/_job.sampler.smmalastep
+          )/_job.sstate.tune.smmalatune.step
         )
       )
     )
@@ -182,7 +185,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     )
   end
 
-  push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sampler.malastep*_job.sstate.oldfirstterm))
+  push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.malatune.step*_job.sstate.oldfirstterm))
 
   push!(
     malabody,
@@ -201,11 +204,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     :(
       _job.sstate.ratio += (
         0.5*(
-          logdet(_job.sampler.malastep*_job.sstate.oldinvtensor)
+          logdet(_job.sstate.tune.malatune.step*_job.sstate.oldinvtensor)
           +dot(
             _job.sstate.pstate.value-_job.sstate.μ,
             _job.pstate.tensorlogtarget*(_job.sstate.pstate.value-_job.sstate.μ)
-          )/_job.sampler.malastep
+          )/_job.sstate.tune.malatune.step
         )
       )
     )
@@ -213,16 +216,16 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(malabody, :(_job.sstate.newfirstterm = _job.sstate.oldinvtensor*_job.sstate.pstate.gradlogtarget))
 
-  push!(malabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sampler.malastep*_job.sstate.newfirstterm))
+  push!(malabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.malatune.step*_job.sstate.newfirstterm))
 
   push!(malabody, :(
       _job.sstate.ratio -= (
         0.5*(
-          logdet(_job.sampler.malastep*_job.sstate.oldinvtensor)
+          logdet(_job.sstate.tune.malatune.step*_job.sstate.oldinvtensor)
           +dot(
             _job.pstate.value-_job.sstate.μ,
             _job.pstate.tensorlogtarget*(_job.pstate.value-_job.sstate.μ)
-          )/_job.sampler.malastep
+          )/_job.sstate.tune.malatune.step
         )
       )
     )

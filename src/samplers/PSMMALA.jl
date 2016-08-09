@@ -224,8 +224,8 @@ end
 
 tuner_state(sampler::PSMMALA, tuner::PSMMALAMCTuner) =
   PSMMALAMCTune(
-    BasicMCTune(smmalastep, 0, 0, tuner.smmalatuner.period),
-    BasicMCTune(malastep, 0, 0, tuner.malatuner.period),
+    BasicMCTune(sampler.smmalastep, 0, 0, tuner.smmalatuner.period),
+    BasicMCTune(sampler.malastep, 0, 0, tuner.malatuner.period),
     BasicMCTune(1., 0, 0, tuner.totaltuner.period)
   )
 

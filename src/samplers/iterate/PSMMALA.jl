@@ -13,14 +13,14 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(body, :(_job.sstate.count += 1))
 
-  push!(body, :(_job.sstate.totaltune.proposed += 1))
+  push!(body, :(_job.sstate.tune.totaltune.proposed += 1))
 
   push!(body, :(_job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)))
 
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
   if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
-    push!(body, :(_job.sstate.smmalatune.proposed += 1))
+    push!(body, :(_job.sstate.tune.smmalatune.proposed += 1))
   end
 
   push!(smmalapasttensorbody, :(_job.parameter.uptotensorlogtarget!(_job.pstate)))
@@ -33,7 +33,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-  push!(smmalapasttensorbody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+  push!(smmalapasttensorbody, :(_job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
@@ -43,7 +43,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     smmalabody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrtsmmalastep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+        _job.sstate.μ+_job.sstate.sqrtsmmalastep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
     )
   )
 
@@ -116,7 +116,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(update, :(_job.sstate.oldinvtensor = copy(_job.sstate.newinvtensor)))
 
-  push!(update, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
+  push!(update, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
 
   push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
 
@@ -160,7 +160,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
     push!(malabody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-    push!(malabody, :(_job.sstate.oldcholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+    push!(malabody, :(_job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
   else
     push!(malabody, :(
         if (!_job.sstate.pastupdatetensor && !_job.pstate.diagnosticvalues[1])
@@ -176,7 +176,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     malabody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrtmalastep*_job.sstate.oldcholinvtensor*randn(_job.pstate.size)
+        _job.sstate.μ+_job.sstate.sqrtmalastep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
     )
   )
 
@@ -284,13 +284,13 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(burninbody, :(rate!(_job.sstate.tune.malatune)))
   end
 
-  if job.tuner.totaltuner.verbose || job.tuner.smmalaltuner.verbose || job.tuner.malaltuner.verbose
+  if job.tuner.totaltuner.verbose || job.tuner.smmalatuner.verbose || job.tuner.malatuner.verbose
     fmt_iter = format_iteration(ndigits(job.range.burnin))
     fmt_perc = format_percentage()
 
     push!(burninbody, :(println(
       "Burnin iteration ",
-      $(fmt_iter)(_job.sstate.totaltune.totproposed),
+      $(fmt_iter)(_job.sstate.tune.totaltune.totproposed),
       " out of ",
       _job.range.burnin,
       "..."
@@ -299,33 +299,33 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     if job.tuner.totaltuner.verbose
       push!(burninbody, :(println(
         "  Overall: ",
-        $(fmt_iter)(_job.sstate.totaltune.accepted),
+        $(fmt_iter)(_job.sstate.tune.totaltune.accepted),
         " accepted out of ",
-        $(fmt_iter)(_job.sstate.totaltune.proposed),
-        " proposed, acceptance rate "
-        $(fmt_perc)(100*_job.sstate.totaltune.rate)
+        $(fmt_iter)(_job.sstate.tune.totaltune.proposed),
+        " proposed, acceptance rate ",
+        $(fmt_perc)(100*_job.sstate.tune.totaltune.rate)
       )))
     end
 
-    if job.tuner.smmalaltuner.verbose
+    if job.tuner.smmalatuner.verbose
       push!(burninbody, :(println(
         "  SMMALA: ",
-        $(fmt_iter)(_job.sstate.smmalatune.accepted),
+        $(fmt_iter)(_job.sstate.tune.smmalatune.accepted),
         " accepted out of ",
-        $(fmt_iter)(_job.sstate.smmalatune.proposed),
-        " proposed, acceptance rate "
-        $(fmt_perc)(100*_job.sstate.smmalatune.rate)
+        $(fmt_iter)(_job.sstate.tune.smmalatune.proposed),
+        " proposed, acceptance rate ",
+        $(fmt_perc)(100*_job.sstate.tune.smmalatune.rate)
       )))
     end
 
-    if job.tuner.malaltuner.verbose
+    if job.tuner.malatuner.verbose
       push!(burninbody, :(println(
         "  MALA: ",
-        $(fmt_iter)(_job.sstate.malatune.accepted),
+        $(fmt_iter)(_job.sstate.tune.malatune.accepted),
         " accepted out of ",
-        $(fmt_iter)(_job.sstate.malatune.proposed),
-        " proposed, acceptance rate "
-        $(fmt_perc)(100*_job.sstate.malatune.rate)
+        $(fmt_iter)(_job.sstate.tune.malatune.proposed),
+        " proposed, acceptance rate ",
+        $(fmt_perc)(100*_job.sstate.tune.malatune.rate)
       )))
     end
   end
@@ -350,7 +350,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(burninbody, :(reset_totburnin!(_job.sstate.tune)))
   end
 
-  push!(body, Expr(:if, :(_job.sstate.totaltune.totproposed <= _job.range.burnin), Expr(:block, burninbody...)))
+  push!(body, Expr(:if, :(_job.sstate.tune.totaltune.totproposed <= _job.range.burnin), Expr(:block, burninbody...)))
 
   if !job.plain
     push!(body, :(produce()))

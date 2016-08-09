@@ -27,7 +27,6 @@ export
   PSMMALAState,
   PSMMALAMCTune,
   PSMMALAMCTuner,
-  accepted!,
   cos_update!,
   ess,
   exp_decay,
@@ -38,16 +37,13 @@ export
   mala_only_update!,
   mod_update!,
   pow_decay,
-  proposed!,
   quad_decay,
   rand_exp_decay_update!,
   rand_lin_decay_update!,
   rand_pow_decay_update!,
   rand_quad_decay_update!,
   rand_update!,
-  reset_totburnin!,
-  smmala_only_update!,
-  totrate!
+  smmala_only_update!
 
 include("tuners/PSMMALAMCTuner.jl")
 

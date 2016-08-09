@@ -275,12 +275,20 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 
   if job.tuner.totaltuner.verbose
-    push!(burninbody, :(_job.sstate.tune.totaltune.accepted = _job.sstate.tune.smmalatune.accepted+_job.sstate.tune.malatune.accepted))
-    push!(burninbody, :(_job.sstate.tune.totaltune.proposed = _job.sstate.tune.smmalatune.proposed+_job.sstate.tune.malatune.proposed))
-    push!(burninbody, :(_job.sstate.tune.totaltune.rate = _job.sstate.tune.totaltune.accepted/_job.sstate.tune.totaltune.proposed))
-    # push!(burninbody, :(tot_accepted!(_job.sstate.tune)))
-    # push!(burninbody, :(proposed!(_job.sstate.tune)))
-    # push!(burninbody, :(totrate!(_job.sstate.tune)))
+    push!(
+      burninbody,
+      :(_job.sstate.tune.totaltune.accepted = _job.sstate.tune.smmalatune.accepted+_job.sstate.tune.malatune.accepted)
+    )
+
+    push!(
+      burninbody,
+      :(_job.sstate.tune.totaltune.proposed = _job.sstate.tune.smmalatune.proposed+_job.sstate.tune.malatune.proposed)
+    )
+
+    push!(
+      burninbody,
+      :(_job.sstate.tune.totaltune.rate = _job.sstate.tune.totaltune.accepted/_job.sstate.tune.totaltune.proposed)
+    )
   end
 
   if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
@@ -353,15 +361,22 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(burninbody, :(reset_burnin!(_job.sstate.tune.malatune)))
   end
 
-  if (job.tuner.totaltuner.verbose)
-    # push!(burninbody, :(reset_totburnin!(_job.sstate.tune)))
-    push!(burninbody, :(_job.sstate.tune.totaltune.totproposed = (_job.sstate.tune.smmalatune.totproposed+_job.sstate.tune.malatune.totproposed)))
+  if job.tuner.totaltuner.verbose
+    push!(
+      burninbody,
+      :(
+        _job.sstate.tune.totaltune.totproposed =
+        (_job.sstate.tune.smmalatune.totproposed+_job.sstate.tune.malatune.totproposed)
+      )
+    )
 
-    # push!(burninbody, :(println(_job.sstate.tune.smmalatune.totproposed)))
-    # push!(burninbody, :(println(_job.sstate.tune.malatune.totproposed)))
-    # push!(burninbody, :(println(_job.sstate.tune.totaltune.totproposed)))
-
-    push!(burninbody, :((_job.sstate.tune.totaltune.accepted, _job.sstate.tune.totaltune.proposed, _job.sstate.tune.totaltune.rate) = (0, 0, NaN)))
+    push!(
+      burninbody,
+      :(
+        (_job.sstate.tune.totaltune.accepted, _job.sstate.tune.totaltune.proposed, _job.sstate.tune.totaltune.rate) =
+        (0, 0, NaN)
+      )
+    )
   end
 
   push!(

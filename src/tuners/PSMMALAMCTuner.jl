@@ -7,17 +7,6 @@ end
 PSMMALAMCTune(smmalastep::Real=1., malastep::Real=1.) =
   PSMMALAMCTune(BasicMCTune(smmalastep), BasicMCTune(malastep), BasicMCTune(1.))
 
-accepted!(tune::MCTunerState) = (tune.totaltune.accepted = tune.smmalatune.accepted+tune.malatune.accepted)
-
-proposed!(tune::PSMMALAMCTune) = (tune.totaltune.proposed = tune.smmalatune.proposed+tune.malatune.proposed)
-
-totrated!(tune::PSMMALAMCTune) = (tune.totaltune.rate = tune.totaltune.accepted/tune.totaltune.proposed)
-
-function reset_totburnin!(tune::PSMMALAMCTune)
-  tune.totaltune.totproposed += (tune.smmalatune.totproposed+tune.malatune.totproposed)
-  (tune.totaltune.accepted, tune.totaltune.proposed, tune.totaltune.rate) = (0, 0, NaN)
-end
-
 immutable PSMMALAMCTuner <: MCTuner
   smmalatuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}
   malatuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}

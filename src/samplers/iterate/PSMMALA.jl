@@ -20,7 +20,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
   if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
-    push!(body, :(_job.sstate.tune.smmalatune.proposed += 1))
+    push!(smmalabody, :(_job.sstate.tune.smmalatune.proposed += 1))
   end
 
   push!(smmalapasttensorbody, :(_job.parameter.uptotensorlogtarget!(_job.pstate)))
@@ -154,7 +154,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   )
 
   if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
-    push!(body, :(_job.sstate.tune.malatune.proposed += 1))
+    push!(malabody, :(_job.sstate.tune.malatune.proposed += 1))
   end
 
   if job.sampler.identitymala
@@ -355,11 +355,26 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   if (job.tuner.totaltuner.verbose)
     # push!(burninbody, :(reset_totburnin!(_job.sstate.tune)))
-    push!(burninbody, :(_job.sstate.tune.totaltune.totproposed += (_job.sstate.tune.smmalatune.totproposed+_job.sstate.tune.malatune.totproposed)))
+    push!(burninbody, :(_job.sstate.tune.totaltune.totproposed = (_job.sstate.tune.smmalatune.totproposed+_job.sstate.tune.malatune.totproposed)))
+
+    # push!(burninbody, :(println(_job.sstate.tune.smmalatune.totproposed)))
+    # push!(burninbody, :(println(_job.sstate.tune.malatune.totproposed)))
+    # push!(burninbody, :(println(_job.sstate.tune.totaltune.totproposed)))
+
     push!(burninbody, :((_job.sstate.tune.totaltune.accepted, _job.sstate.tune.totaltune.proposed, _job.sstate.tune.totaltune.rate) = (0, 0, NaN)))
   end
 
-  push!(body, Expr(:if, :(_job.sstate.tune.totaltune.totproposed <= _job.range.burnin), Expr(:block, burninbody...)))
+  push!(
+    body,
+    Expr(
+      :if,
+      :(
+        _job.sstate.tune.totaltune.totproposed <= _job.range.burnin &&
+        mod(_job.sstate.tune.totaltune.proposed, _job.tuner.totaltuner.period) == 0
+      ),
+      Expr(:block, burninbody...)
+    )
+  )
 
   if !job.plain
     push!(body, :(produce()))

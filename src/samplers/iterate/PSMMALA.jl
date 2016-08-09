@@ -346,6 +346,10 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(burninbody, :(reset_burnin!(_job.sstate.tune.malatune)))
   end
 
+  if job.tuner.totaltuner.verbose
+    push!(burninbody, :(reset_totburnin!(_job.sstate.tune)))
+  end
+
   push!(body, Expr(:if, :(_job.sstate.totaltune.totproposed <= _job.range.burnin), Expr(:block, burninbody...)))
 
   if !job.plain

@@ -11,6 +11,9 @@ accepted!(tune::PSMMALAMCTune) = tune.totaltune.accepted = tune.smmalatune.accep
 
 proposed!(tune::PSMMALAMCTune) = tune.totaltune.proposed = tune.smmalatune.proposed+tune.malatune.proposed
 
-totproposed!(tune::PSMMALAMCTune) = tune.totaltune.totproposed = tune.smmalatune.totproposed+tune.malatune.totproposed
-
 totrate!(tune::PSMMALAMCTune) = (tune.totaltune.rate = tune.totaltune.accepted/tune.totaltune.proposed)
+
+function reset_totburnin!(tune::PSMMALAMCTune)
+  tune.totaltune.totproposed += (tune.smmalatune.totproposed+tune.malatune.totproposed)
+  (tune.accepted, tune.proposed, tune.rate) = (0, 0, NaN)
+end

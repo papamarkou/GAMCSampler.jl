@@ -13,7 +13,15 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(body, :(_job.sstate.count += 1))
 
-  push!(body, :(_job.sstate.tune.totaltune.proposed += 1))
+  if (
+    job.tuner.totaltuner.verbose ||
+    job.tuner.smmalatuner.verbose ||
+    job.tuner.malatuner.verbose ||
+    isa(job.tuner.smmalatuner, AcceptanceRateMCTuner) ||
+    isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+  )
+    push!(body, :(_job.sstate.tune.totaltune.proposed += 1))
+  end
 
   push!(body, :(_job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)))
 
@@ -277,16 +285,6 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   if job.tuner.totaltuner.verbose
     push!(
       burninbody,
-      :(_job.sstate.tune.totaltune.accepted = _job.sstate.tune.smmalatune.accepted+_job.sstate.tune.malatune.accepted)
-    )
-
-    push!(
-      burninbody,
-      :(_job.sstate.tune.totaltune.proposed = _job.sstate.tune.smmalatune.proposed+_job.sstate.tune.malatune.proposed)
-    )
-
-    push!(
-      burninbody,
       :(_job.sstate.tune.totaltune.rate = _job.sstate.tune.totaltune.accepted/_job.sstate.tune.totaltune.proposed)
     )
   end
@@ -305,7 +303,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
     push!(burninbody, :(println(
       "Burnin iteration ",
-      $(fmt_iter)(_job.sstate.tune.totaltune.totproposed),
+      $(fmt_iter)(_job.sstate.count),
       " out of ",
       _job.range.burnin,
       "..."
@@ -346,11 +344,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   end
 
   if isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
-    push!(burninbody, :(tune!(_job.sstate.tune.smmalatune, job.tuner.smmalatuner)))
+    push!(burninbody, :(tune!(_job.sstate.tune.smmalatune, _job.tuner.smmalatuner)))
   end
 
   if isa(job.tuner.malatuner, AcceptanceRateMCTuner)
-    push!(burninbody, :(tune!(_job.sstate.tune.malatune, job.tuner.malatuner)))
+    push!(burninbody, :(tune!(_job.sstate.tune.malatune, _job.tuner.malatuner)))
   end
 
   if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
@@ -361,35 +359,34 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(burninbody, :(reset_burnin!(_job.sstate.tune.malatune)))
   end
 
-  if job.tuner.totaltuner.verbose
-    push!(
-      burninbody,
-      :(
-        _job.sstate.tune.totaltune.totproposed =
-        (_job.sstate.tune.smmalatune.totproposed+_job.sstate.tune.malatune.totproposed)
-      )
-    )
+  if (
+    job.tuner.totaltuner.verbose ||
+    job.tuner.smmalatuner.verbose ||
+    job.tuner.malatuner.verbose ||
+    isa(job.tuner.smmalatuner, AcceptanceRateMCTuner) ||
+    isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+  )
+    push!(burninbody, :(_job.sstate.tune.totaltune.totproposed += _job.sstate.tune.totaltune.proposed))
+
+    push!(burninbody, :(_job.sstate.tune.totaltune.proposed = 0))
+
+    if job.tuner.totaltuner.verbose
+      push!(burninbody, :(_job.sstate.tune.totaltune.accepted = 0))
+      push!(burninbody, :(_job.sstate.tune.totaltune.rate = NaN))
+    end
 
     push!(
-      burninbody,
-      :(
-        (_job.sstate.tune.totaltune.accepted, _job.sstate.tune.totaltune.proposed, _job.sstate.tune.totaltune.rate) =
-        (0, 0, NaN)
+      body,
+      Expr(
+        :if,
+        :(
+          _job.sstate.tune.totaltune.totproposed <= _job.range.burnin &&
+          mod(_job.sstate.tune.totaltune.proposed, _job.tuner.totaltuner.period) == 0
+        ),
+        Expr(:block, burninbody...)
       )
     )
   end
-
-  push!(
-    body,
-    Expr(
-      :if,
-      :(
-        _job.sstate.tune.totaltune.totproposed <= _job.range.burnin &&
-        mod(_job.sstate.tune.totaltune.proposed, _job.tuner.totaltuner.period) == 0
-      ),
-      Expr(:block, burninbody...)
-    )
-  )
 
   if !job.plain
     push!(body, :(produce()))

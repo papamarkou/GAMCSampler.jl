@@ -18,6 +18,7 @@ import Lora:
   initialize!,
   reset!,
   sampler_state,
+  tune!,
   tuner_state,
   variate_form
 

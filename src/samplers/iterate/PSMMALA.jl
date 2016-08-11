@@ -293,20 +293,29 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   end
 
   if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
+    push!(
+      burninbody,
+      :(_job.sstate.tune.smmalafrequency = _job.sstate.tune.smmalatune.proposed/_job.sstate.tune.totaltune.proposed)
+    )
     push!(burninbody, :(rate!(_job.sstate.tune.smmalatune)))
   end
 
   if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+    push!(
+      burninbody,
+      :(_job.sstate.tune.malafrequency = _job.sstate.tune.malatune.proposed/_job.sstate.tune.totaltune.proposed)
+    )
     push!(burninbody, :(rate!(_job.sstate.tune.malatune)))
   end
 
   if job.tuner.totaltuner.verbose || job.tuner.smmalatuner.verbose || job.tuner.malatuner.verbose
-    fmt_iter = format_iteration(ndigits(job.range.burnin))
+    fmt_tot_iter = format_iteration(ndigits(job.range.burnin))
+    fmt_burnin_iter = format_iteration(ndigits(job.tuner.totaltuner.period))
     fmt_perc = format_percentage()
 
     push!(burninbody, :(println(
       "Burnin iteration ",
-      $(fmt_iter)(_job.sstate.count),
+      $(fmt_tot_iter)(_job.sstate.count),
       " out of ",
       _job.range.burnin,
       "..."
@@ -314,45 +323,58 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
     if job.tuner.totaltuner.verbose
       push!(burninbody, :(println(
-        "  Overall: ",
-        $(fmt_iter)(_job.sstate.tune.totaltune.accepted),
-        " accepted out of ",
-        $(fmt_iter)(_job.sstate.tune.totaltune.proposed),
-        " proposed, acceptance rate ",
-        $(fmt_perc)(100*_job.sstate.tune.totaltune.rate)
+        "  Total : ",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.accepted),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.totaltune.rate),
+        "%) acceptance rate"
       )))
     end
 
     if job.tuner.smmalatuner.verbose
       push!(burninbody, :(println(
         "  SMMALA: ",
-        $(fmt_iter)(_job.sstate.tune.smmalatune.accepted),
-        " accepted out of ",
-        $(fmt_iter)(_job.sstate.tune.smmalatune.proposed),
-        " proposed, acceptance rate ",
-        $(fmt_perc)(100*_job.sstate.tune.smmalatune.rate)
+        $(fmt_burnin_iter)(_job.sstate.tune.smmalatune.accepted),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.smmalatune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.smmalatune.rate),
+        "%) acceptance rate, ",
+        $(fmt_burnin_iter)(_job.sstate.tune.smmalatune.proposed),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.smmalafrequency),
+        "%) running frequency"
       )))
     end
 
     if job.tuner.malatuner.verbose
       push!(burninbody, :(println(
-        "  MALA: ",
-        $(fmt_iter)(_job.sstate.tune.malatune.accepted),
-        " accepted out of ",
-        $(fmt_iter)(_job.sstate.tune.malatune.proposed),
-        " proposed, acceptance rate ",
-        $(fmt_perc)(100*_job.sstate.tune.malatune.rate)
+        "  MALA  : ",
+        $(fmt_burnin_iter)(_job.sstate.tune.malatune.accepted),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.malatune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.malatune.rate),
+        "%) acceptance rate, ",
+        $(fmt_burnin_iter)(_job.sstate.tune.malatune.proposed),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.malafrequency),
+        "%) running frequency"
       )))
     end
   end
 
   if isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
-    # push!(burninbody, :(tune!(_job.sstate.tune.smmalatune, _job.tuner.smmalatuner)))
     push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner, Val{:smmala})))
   end
 
   if isa(job.tuner.malatuner, AcceptanceRateMCTuner)
-    # push!(burninbody, :(tune!(_job.sstate.tune.malatune, _job.tuner.malatuner)))
     push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner, Val{:mala})))
   end
 

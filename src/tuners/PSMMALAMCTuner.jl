@@ -2,10 +2,12 @@ type PSMMALAMCTune <: MCTunerState
   smmalatune::BasicMCTune
   malatune::BasicMCTune
   totaltune::BasicMCTune
+  smmalafrequency::Real
+  malafrequency::Real
 end
 
 PSMMALAMCTune(smmalastep::Real=1., malastep::Real=1.) =
-  PSMMALAMCTune(BasicMCTune(smmalastep), BasicMCTune(malastep), BasicMCTune(1.))
+  PSMMALAMCTune(BasicMCTune(smmalastep), BasicMCTune(malastep), BasicMCTune(1.), NaN, NaN)
 
 immutable PSMMALAMCTuner <: MCTuner
   smmalatuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}
@@ -16,13 +18,13 @@ immutable PSMMALAMCTuner <: MCTuner
 end
 
 function tune!(tune::PSMMALAMCTune, tuner::PSMMALAMCTuner, ::Type{Val{:smmala}})
-  if tune.smmalatune.proposed/tune.totaltune.proposed >= tuner.smmalathreshold
+  if tune.smmalafrequency >= tuner.smmalathreshold
     tune.smmalatune.step *= tuner.smmalatuner.score(tune.smmalatune.rate-tuner.smmalatuner.targetrate)
   end
 end
 
 function tune!(tune::PSMMALAMCTune, tuner::PSMMALAMCTuner, ::Type{Val{:mala}})
-  if tune.malatune.proposed/tune.totaltune.proposed >= tuner.malathreshold
+  if tune.malafrequency >= tuner.malathreshold
     tune.malatune.step *= tuner.malatuner.score(tune.malatune.rate-tuner.malatuner.targetrate)
   end
 end

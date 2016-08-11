@@ -226,7 +226,9 @@ tuner_state(sampler::PSMMALA, tuner::PSMMALAMCTuner) =
   PSMMALAMCTune(
     BasicMCTune(sampler.smmalastep, 0, 0, tuner.smmalatuner.period),
     BasicMCTune(sampler.malastep, 0, 0, tuner.malatuner.period),
-    BasicMCTune(1., 0, 0, tuner.totaltuner.period)
+    BasicMCTune(1., 0, 0, tuner.totaltuner.period),
+    NaN,
+    NaN
   )
 
 function sampler_state(

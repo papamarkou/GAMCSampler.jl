@@ -372,10 +372,12 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   if isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
     push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner, Val{:smmala})))
+    push!(burninbody, :(_job.sstate.sqrtsmmalastep = sqrt(_job.sstate.tune.smmalatune.step)))
   end
 
   if isa(job.tuner.malatuner, AcceptanceRateMCTuner)
     push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner, Val{:mala})))
+    push!(burninbody, :(_job.sstate.sqrtmalastep = sqrt(_job.sstate.tune.malatune.step)))
   end
 
   if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)

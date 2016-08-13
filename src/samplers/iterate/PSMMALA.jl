@@ -17,8 +17,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     job.tuner.totaltuner.verbose ||
     job.tuner.smmalatuner.verbose ||
     job.tuner.malatuner.verbose ||
-    isa(job.tuner.smmalatuner, AcceptanceRateMCTuner) ||
-    isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+    isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
   )
     push!(body, :(_job.sstate.tune.totaltune.proposed += 1))
   end
@@ -27,7 +26,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
-  if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
+  if job.tuner.smmalatuner.verbose
     push!(smmalabody, :(_job.sstate.tune.smmalatune.proposed += 1))
   end
 
@@ -45,13 +44,13 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
-  push!(smmalabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.smmalatune.step*_job.sstate.oldfirstterm))
+  push!(smmalabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.oldfirstterm))
 
   push!(
     smmalabody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrtsmmalastep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
     )
   )
 
@@ -70,11 +69,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     :(
       _job.sstate.ratio += (
         0.5*(
-          logdet(_job.sstate.tune.smmalatune.step*_job.sstate.oldinvtensor)
+          logdet(_job.sstate.tune.totaltune.step*_job.sstate.oldinvtensor)
           +dot(
             _job.sstate.pstate.value-_job.sstate.μ,
             _job.pstate.tensorlogtarget*(_job.sstate.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.smmalatune.step
+          )/_job.sstate.tune.totaltune.step
         )
       )
     )
@@ -84,17 +83,17 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(
     smmalabody,
-    :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.smmalatune.step*_job.sstate.newfirstterm)
+    :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.newfirstterm)
   )
 
   push!(smmalabody, :(
       _job.sstate.ratio -= (
         0.5*(
-          logdet(_job.sstate.tune.smmalatune.step*_job.sstate.newinvtensor)
+          logdet(_job.sstate.tune.totaltune.step*_job.sstate.newinvtensor)
           +dot(
             _job.pstate.value-_job.sstate.μ,
             _job.sstate.pstate.tensorlogtarget*(_job.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.smmalatune.step
+          )/_job.sstate.tune.totaltune.step
         )
       )
     )
@@ -146,11 +145,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
   end
 
-  if job.tuner.totaltuner.verbose
+  if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
     push!(update, :(_job.sstate.tune.totaltune.accepted += 1))
   end
 
-  if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
+  if job.tuner.smmalatuner.verbose
     push!(update, :(_job.sstate.tune.smmalatune.accepted += 1))
   end
 
@@ -164,7 +163,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     )
   )
 
-  if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+  if job.tuner.malatuner.verbose
     push!(malabody, :(_job.sstate.tune.malatune.proposed += 1))
   end
 
@@ -185,13 +184,13 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     )
   end
 
-  push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.malatune.step*_job.sstate.oldfirstterm))
+  push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.oldfirstterm))
 
   push!(
     malabody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrtmalastep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
+        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
     )
   )
 
@@ -204,11 +203,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     :(
       _job.sstate.ratio += (
         0.5*(
-          logdet(_job.sstate.tune.malatune.step*_job.sstate.oldinvtensor)
+          logdet(_job.sstate.tune.totaltune.step*_job.sstate.oldinvtensor)
           +dot(
             _job.sstate.pstate.value-_job.sstate.μ,
             _job.pstate.tensorlogtarget*(_job.sstate.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.malatune.step
+          )/_job.sstate.tune.totaltune.step
         )
       )
     )
@@ -216,16 +215,16 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(malabody, :(_job.sstate.newfirstterm = _job.sstate.oldinvtensor*_job.sstate.pstate.gradlogtarget))
 
-  push!(malabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.malatune.step*_job.sstate.newfirstterm))
+  push!(malabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.newfirstterm))
 
   push!(malabody, :(
       _job.sstate.ratio -= (
         0.5*(
-          logdet(_job.sstate.tune.malatune.step*_job.sstate.oldinvtensor)
+          logdet(_job.sstate.tune.totaltune.step*_job.sstate.oldinvtensor)
           +dot(
             _job.pstate.value-_job.sstate.μ,
             _job.pstate.tensorlogtarget*(_job.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.malatune.step
+          )/_job.sstate.tune.totaltune.step
         )
       )
     )
@@ -263,11 +262,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
   end
 
-  if job.tuner.totaltuner.verbose
+  if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
     push!(update, :(_job.sstate.tune.totaltune.accepted += 1))
   end
 
-  if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+  if job.tuner.malatuner.verbose
     push!(update, :(_job.sstate.tune.malatune.accepted += 1))
   end
 
@@ -285,14 +284,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 
-  if job.tuner.totaltuner.verbose
-    push!(
-      burninbody,
-      :(_job.sstate.tune.totaltune.rate = _job.sstate.tune.totaltune.accepted/_job.sstate.tune.totaltune.proposed)
-    )
+  if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(rate!(_job.sstate.tune.totaltune)))
   end
 
-  if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
+  if job.tuner.smmalatuner.verbose
     push!(
       burninbody,
       :(_job.sstate.tune.smmalafrequency = _job.sstate.tune.smmalatune.proposed/_job.sstate.tune.totaltune.proposed)
@@ -300,7 +296,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(burninbody, :(rate!(_job.sstate.tune.smmalatune)))
   end
 
-  if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+  if job.tuner.malatuner.verbose
     push!(
       burninbody,
       :(_job.sstate.tune.malafrequency = _job.sstate.tune.malatune.proposed/_job.sstate.tune.totaltune.proposed)
@@ -370,19 +366,16 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     end
   end
 
-  if isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
-    push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner, Val{:smmala})))
+  if isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(tune!(_job.sstate.tune.totaltune, _job.tuner.totaltuner)))
+    push!(burninbody, :(_job.sstate.sqrttunestep = sqrt(_job.sstate.tune.totaltune.step)))
   end
 
-  if isa(job.tuner.malatuner, AcceptanceRateMCTuner)
-    push!(burninbody, :(tune!(_job.sstate.tune, _job.tuner, Val{:mala})))
-  end
-
-  if job.tuner.smmalatuner.verbose || isa(job.tuner.smmalatuner, AcceptanceRateMCTuner)
+  if job.tuner.smmalatuner.verbose
     push!(burninbody, :(reset_burnin!(_job.sstate.tune.smmalatune)))
   end
 
-  if job.tuner.malatuner.verbose || isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+  if job.tuner.malatuner.verbose
     push!(burninbody, :(reset_burnin!(_job.sstate.tune.malatune)))
   end
 
@@ -390,8 +383,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     job.tuner.totaltuner.verbose ||
     job.tuner.smmalatuner.verbose ||
     job.tuner.malatuner.verbose ||
-    isa(job.tuner.smmalatuner, AcceptanceRateMCTuner) ||
-    isa(job.tuner.malatuner, AcceptanceRateMCTuner)
+    isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
   )
     push!(burninbody, :(_job.sstate.tune.totaltune.totproposed += _job.sstate.tune.totaltune.proposed))
 

@@ -12,6 +12,7 @@ type MuvPSMMALAState <: PSMMALAState
   sqrttunestep::Real
   ratio::Real
   μ::RealVector
+  runningmean::RealVector
   newinvtensor::RealMatrix
   oldinvtensor::RealMatrix
   cholinvtensor::RealLowerTriangular
@@ -28,6 +29,7 @@ type MuvPSMMALAState <: PSMMALAState
     sqrttunestep::Real,
     ratio::Real,
     μ::RealVector,
+    runningmean::RealVector,
     newinvtensor::RealMatrix,
     oldinvtensor::RealMatrix,
     cholinvtensor::RealLowerTriangular,
@@ -48,6 +50,7 @@ type MuvPSMMALAState <: PSMMALAState
       sqrttunestep,
       ratio,
       μ,
+      runningmean,
       newinvtensor,
       oldinvtensor,
       cholinvtensor,
@@ -68,6 +71,7 @@ MuvPSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerS
   NaN,
   NaN,
   Array(eltype(pstate), pstate.size),
+  Array(eltype(pstate), pstate.size+2),
   Array(eltype(pstate), pstate.size, pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
   RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
@@ -166,30 +170,16 @@ rand_quad_decay_update!(
 
 immutable PSMMALA <: LMCSampler
   driftstep::Real
-  identitymala::Bool
   update!::Function
   transform::Union{Function, Void}
-  initupdatetensor::Tuple{Bool,Bool} # The tuple ordinates refer to (sstate.presentupdatetensor, sstate.pastupdatetensor)
 
-  function PSMMALA(
-    driftstep::Real,
-    identitymala::Bool,
-    update!::Function,
-    transform::Union{Function, Void},
-    initupdatetensor::Tuple{Bool,Bool}
-    )
+  function PSMMALA(driftstep::Real, update!::Function, transform::Union{Function, Void})
     @assert driftstep > 0 "Drift step is not positive"
-    new(driftstep, identitymala, update!, transform, initupdatetensor)
+    new(driftstep, update!, transform)
   end
 end
 
-PSMMALA(
-  driftstep::Real=1.;
-  identitymala::Bool=false,
-  update::Function=rand_update!,
-  transform::Union{Function, Void}=nothing,
-  initupdatetensor::Tuple{Bool,Bool}=(false, false)
-) =
+PSMMALA(driftstep::Real=1.; update::Function=rand_update!, transform::Union{Function, Void}=nothing) =
   PSMMALA(driftstep, identitymala, update, transform, initupdatetensor)
 
 ### Initialize PSMMALA sampler
@@ -228,10 +218,13 @@ function sampler_state(
 )
   sstate = MuvPSMMALAState(generate_empty(pstate), tuner_state(sampler, tuner))
   sstate.sqrttunestep = sqrt(sampler.driftstep)
+  sstate.runningmean[1] = copy(pstate.value)
+  sstate.runningmean[2] = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
+  sstate.presentupdatetensor = true
+  sstate.pastupdatetensor = false
   sstate
 end
 
@@ -261,10 +254,13 @@ function reset!(
 )
   reset!(sstate.tune, sampler, tuner)
   sstate.sqrttunestep = sqrt(sampler.driftstep)
+  sstate.runningmean[1] = copy(pstate.value)
+  sstate.runningmean[2] = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
+  sstate.presentupdatetensor = true
+  sstate.pastupdatetensor = false
 end
 
 Base.show(io::IO, sampler::PSMMALA) = print(io, "PSMMALA sampler: drift step = $(sampler.driftstep)")

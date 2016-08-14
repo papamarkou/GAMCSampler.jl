@@ -23,11 +23,15 @@ import Lora:
   variate_form
 
 export
-  MuvPSMMALAState,
+  MuvAMSMMALAState,
+  ALSMMALA,
+  AMSMMALA,
+  ALSMMALAState,
+  AMSMMALAState,
   PSMMALA,
-  PSMMALAState,
   PSMMALAMCTune,
   PSMMALAMCTuner,
+  PSMMALAState,
   cos_update!,
   ess,
   exp_decay,
@@ -48,8 +52,11 @@ export
 
 include("tuners/PSMMALAMCTuner.jl")
 
-include("samplers/PSMMALA.jl")
+include("samplers/samplers.jl")
+include("samplers/ALSMMALA.jl")
+include("samplers/AMSMMALA.jl")
 
-include("samplers/iterate/PSMMALA.jl")
+include("samplers/iterate/ALSMMALA.jl")
+include("samplers/iterate/AMSMMALA.jl")
 
 end # module

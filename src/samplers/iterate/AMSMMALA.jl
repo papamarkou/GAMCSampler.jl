@@ -174,23 +174,19 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
     push!(ambody, :(_job.sstate.tune.malatune.proposed += 1))
   end
 
-  push!(ambody, :(_job.sstate.newinvtensor = ((_job.sstate.count-3)/(_job.sstate.count-2))*_job.sstate.oldinvtensor))
-
-  push!(ambody, :(BLAS.ger!(1.0, _job.pstate.value/(_job.sstate.count-2), _job.pstate.value, _job.sstate.newinvtensor)))
-
   push!(
     ambody,
     :(
-      BLAS.ger!(
-        1.0,
-        -((_job.sstate.count-1)/(_job.sstate.count-2))*_job.sstate.lastmean,
+      covariance!(
+        _job.sstate.newinvtensor,
+        _job.sstate.oldinvtensor,
+        _job.sstate.count-2,
+        _job.pstate.value,
         _job.sstate.lastmean,
-        _job.sstate.newinvtensor
+        _job.sstate.secondlastmean
       )
     )
   )
-
-  push!(ambody, :(BLAS.ger!(1.0, _job.sstate.secondlastmean, _job.sstate.secondlastmean, _job.sstate.newinvtensor)))
 
   push!(ambody, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
 
@@ -250,7 +246,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
 
   push!(body, :(_job.sstate.secondlastmean = copy(_job.sstate.lastmean)))
 
-  push!(body, :(_job.sstate.lastmean = (((_job.sstate.count-1)*_job.sstate.lastmean+_job.pstate.value)/_job.sstate.count)))
+  push!(body, :(mean!(_job.sstate.lastmean, _job.sstate.count, _job.pstate.value)))
 
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 

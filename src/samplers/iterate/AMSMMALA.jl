@@ -183,7 +183,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
     :(
       BLAS.ger!(
         1.0,
-        ((_job.sstate.count-1)/(_job.sstate.count-2))*_job.sstate.lastmean,
+        -((_job.sstate.count-1)/(_job.sstate.count-2))*_job.sstate.lastmean,
         _job.sstate.lastmean,
         _job.sstate.newinvtensor
       )

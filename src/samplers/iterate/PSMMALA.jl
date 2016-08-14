@@ -1,7 +1,7 @@
 function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   result::Expr
   burninbody = []
-  malabody = []
+  ambody = []
   smmalapasttensorbody = []
   smmalabody = []
   body = []
@@ -22,7 +22,14 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     push!(body, :(_job.sstate.tune.totaltune.proposed += 1))
   end
 
-  push!(body, :(_job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)))
+  push!(
+    body,
+    :(
+      if _job.sstate.count >= 4
+        _job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)
+      end
+    )
+  )
 
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
@@ -164,88 +171,55 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   )
 
   if job.tuner.malatuner.verbose
-    push!(malabody, :(_job.sstate.tune.malatune.proposed += 1))
+    push!(ambody, :(_job.sstate.tune.malatune.proposed += 1))
   end
 
-  if job.sampler.identitymala
-    push!(malabody, :(_job.pstate.tensorlogtarget = eye(_job.pstate.size, _job.pstate.size)))
+  push!(ambody, :(_job.sstate.newinvtensor = ((_job.sstate.count-3)/(_job.sstate.count-2))*_job.sstate.oldinvtensor))
 
-    push!(malabody, :(_job.sstate.oldinvtensor = eye(_job.pstate.size, _job.pstate.size)))
-
-    push!(malabody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
-
-    push!(malabody, :(_job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
-  else
-    push!(malabody, :(
-        if (!_job.sstate.pastupdatetensor && !_job.pstate.diagnosticvalues[1])
-          _job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget
-        end
-      )
-    )
-  end
-
-  push!(malabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.oldfirstterm))
+  push!(ambody, :(BLAS.ger!(1.0, _job.pstate.value/(_job.sstate.count-2), _job.pstate.value, _job.sstate.newinvtensor)))
 
   push!(
-    malabody,
+    ambody,
+    :(
+      BLAS.ger!(
+        1.0,
+        ((_job.sstate.count-1)/(_job.sstate.count-2))*_job.sstate.runningmean[:, _job.sstate.count-1],
+        _job.sstate.runningmean[:, _job.sstate.count-1],
+        _job.sstate.newinvtensor
+      )
+    )
+  )
+
+  push!(
+    ambody,
+    :(
+      BLAS.ger!(
+        1.0,
+        _job.sstate.runningmean[:, _job.sstate.count-2],
+        _job.sstate.runningmean[:, _job.sstate.count-2],
+        _job.sstate.newinvtensor
+      )
+    )
+  )
+
+  push!(ambody, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
+
+  push!(
+    ambody,
     :(
       _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
+        _job.pstate.value+_job.sstate.sqrttunestep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
     )
   )
 
-  push!(malabody, :(_job.parameter.uptogradlogtarget!(_job.sstate.pstate)))
+  push!(ambody, :(_job.parameter.logtarget!(_job.sstate.pstate)))
 
-  push!(malabody, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
-
-  push!(
-    malabody,
-    :(
-      _job.sstate.ratio += (
-        0.5*(
-          logdet(_job.sstate.tune.totaltune.step*_job.sstate.oldinvtensor)
-          +dot(
-            _job.sstate.pstate.value-_job.sstate.μ,
-            _job.pstate.tensorlogtarget*(_job.sstate.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.totaltune.step
-        )
-      )
-    )
-  )
-
-  push!(malabody, :(_job.sstate.newfirstterm = _job.sstate.oldinvtensor*_job.sstate.pstate.gradlogtarget))
-
-  push!(malabody, :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.newfirstterm))
-
-  push!(malabody, :(
-      _job.sstate.ratio -= (
-        0.5*(
-          logdet(_job.sstate.tune.totaltune.step*_job.sstate.oldinvtensor)
-          +dot(
-            _job.pstate.value-_job.sstate.μ,
-            _job.pstate.tensorlogtarget*(_job.pstate.value-_job.sstate.μ)
-          )/_job.sstate.tune.totaltune.step
-        )
-      )
-    )
-  )
+  push!(ambody, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
 
   update = []
   noupdate = []
 
   push!(update, :(_job.pstate.value = copy(_job.sstate.pstate.value)))
-
-  push!(update, :(_job.pstate.gradlogtarget = copy(_job.sstate.pstate.gradlogtarget)))
-
-  if in(:gradloglikelihood, job.outopts[:monitor]) && job.parameter.gradloglikelihood! != nothing
-    push!(update, :(_job.pstate.gradloglikelihood = copy(_job.sstate.pstate.gradloglikelihood)))
-  end
-
-  if in(:gradlogprior, job.outopts[:monitor]) && job.parameter.gradlogprior! != nothing
-    push!(update, :(_job.pstate.gradlogprior = copy(_job.sstate.pstate.gradlogprior)))
-  end
-
-  push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
 
   push!(update, :(_job.pstate.logtarget = _job.sstate.pstate.logtarget))
 
@@ -256,6 +230,8 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   if in(:logprior, job.outopts[:monitor]) && job.parameter.logprior! != nothing
     push!(update, :(_job.pstate.logprior = _job.sstate.pstate.logprior))
   end
+
+  push!(update, :(_job.sstate.oldinvtensor = copy(_job.sstate.newinvtensor)))
 
   if in(:accept, job.outopts[:diagnostics])
     push!(update, :(_job.pstate.diagnosticvalues[1] = true))
@@ -271,7 +247,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
   end
 
   push!(
-    malabody,
+    ambody,
     Expr(
       :if,
       :(_job.sstate.ratio > 0 || (_job.sstate.ratio > log(rand()))),
@@ -280,7 +256,18 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     )
   )
 
-  push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), Expr(:block, malabody...)))
+  push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), Expr(:block, ambody...)))
+
+  push!(
+    body,
+    :(
+      if _job.sstate.count == 1
+        _job.sstate.runningmean[:, 1] = _job.pstate.value
+      else
+        _job.sstate.runningmean[:, _job.sstate.count] = ((_job.sstate.count-1)*_job.sstate.runningmean[:, _job.sstate.count-1]+_job.pstate.value)/_job.sstate.count
+      end
+    )
+  )
 
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 

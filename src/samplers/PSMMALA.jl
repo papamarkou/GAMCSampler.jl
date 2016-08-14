@@ -12,7 +12,7 @@ type MuvPSMMALAState <: PSMMALAState
   sqrttunestep::Real
   ratio::Real
   μ::RealVector
-  runningmean::RealVector
+  runningmean::RealMatrix
   newinvtensor::RealMatrix
   oldinvtensor::RealMatrix
   cholinvtensor::RealLowerTriangular
@@ -29,7 +29,7 @@ type MuvPSMMALAState <: PSMMALAState
     sqrttunestep::Real,
     ratio::Real,
     μ::RealVector,
-    runningmean::RealVector,
+    runningmean::RealMatrix,
     newinvtensor::RealMatrix,
     oldinvtensor::RealMatrix,
     cholinvtensor::RealLowerTriangular,
@@ -71,7 +71,7 @@ MuvPSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerS
   NaN,
   NaN,
   Array(eltype(pstate), pstate.size),
-  Array(eltype(pstate), pstate.size+2),
+  Array(eltype(pstate), pstate.size, 100000),
   Array(eltype(pstate), pstate.size, pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
   RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
@@ -180,7 +180,7 @@ immutable PSMMALA <: LMCSampler
 end
 
 PSMMALA(driftstep::Real=1.; update::Function=rand_update!, transform::Union{Function, Void}=nothing) =
-  PSMMALA(driftstep, identitymala, update, transform, initupdatetensor)
+  PSMMALA(driftstep, update, transform)
 
 ### Initialize PSMMALA sampler
 
@@ -218,8 +218,6 @@ function sampler_state(
 )
   sstate = MuvPSMMALAState(generate_empty(pstate), tuner_state(sampler, tuner))
   sstate.sqrttunestep = sqrt(sampler.driftstep)
-  sstate.runningmean[1] = copy(pstate.value)
-  sstate.runningmean[2] = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
@@ -254,8 +252,6 @@ function reset!(
 )
   reset!(sstate.tune, sampler, tuner)
   sstate.sqrttunestep = sqrt(sampler.driftstep)
-  sstate.runningmean[1] = copy(pstate.value)
-  sstate.runningmean[2] = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget

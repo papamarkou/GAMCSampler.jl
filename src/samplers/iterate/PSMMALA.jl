@@ -183,24 +183,14 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
     :(
       BLAS.ger!(
         1.0,
-        ((_job.sstate.count-1)/(_job.sstate.count-2))*_job.sstate.runningmean[:, _job.sstate.count-1],
-        _job.sstate.runningmean[:, _job.sstate.count-1],
+        ((_job.sstate.count-1)/(_job.sstate.count-2))*_job.sstate.lastmean,
+        _job.sstate.lastmean,
         _job.sstate.newinvtensor
       )
     )
   )
 
-  push!(
-    ambody,
-    :(
-      BLAS.ger!(
-        1.0,
-        _job.sstate.runningmean[:, _job.sstate.count-2],
-        _job.sstate.runningmean[:, _job.sstate.count-2],
-        _job.sstate.newinvtensor
-      )
-    )
-  )
+  push!(ambody, :(BLAS.ger!(1.0, _job.sstate.secondlastmean, _job.sstate.secondlastmean, _job.sstate.newinvtensor)))
 
   push!(ambody, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
 
@@ -258,16 +248,9 @@ function codegen(::Type{Val{:iterate}}, ::Type{PSMMALA}, job::BasicMCJob)
 
   push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), Expr(:block, ambody...)))
 
-  push!(
-    body,
-    :(
-      if _job.sstate.count == 1
-        _job.sstate.runningmean[:, 1] = _job.pstate.value
-      else
-        _job.sstate.runningmean[:, _job.sstate.count] = ((_job.sstate.count-1)*_job.sstate.runningmean[:, _job.sstate.count-1]+_job.pstate.value)/_job.sstate.count
-      end
-    )
-  )
+  push!(body, :(_job.sstate.secondlastmean = copy(_job.sstate.lastmean)))
+
+  push!(body, :(_job.sstate.lastmean = (((_job.sstate.count-1)*_job.sstate.lastmean+_job.pstate.value)/_job.sstate.count)))
 
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 

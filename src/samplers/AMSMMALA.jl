@@ -172,15 +172,17 @@ immutable AMSMMALA <: PSMMALA
   driftstep::Real
   update!::Function
   transform::Union{Function, Void}
+  t0::Integer
 
-  function AMSMMALA(driftstep::Real, update!::Function, transform::Union{Function, Void})
+  function AMSMMALA(driftstep::Real, update!::Function, transform::Union{Function, Void}, t0::Integer)
     @assert driftstep > 0 "Drift step is not positive"
-    new(driftstep, update!, transform)
+    @assert t0 > 0 "t0 is not positive"
+    new(driftstep, update!, transform, t0)
   end
 end
 
-AMSMMALA(driftstep::Real=1.; update::Function=rand_update!, transform::Union{Function, Void}=nothing) =
-  AMSMMALA(driftstep, update, transform)
+AMSMMALA(driftstep::Real=1.; update::Function=rand_update!, transform::Union{Function, Void}=nothing, t0::Integer=3) =
+  AMSMMALA(driftstep, update, transform, t0)
 
 ### Initialize AMSMMALA sampler
 

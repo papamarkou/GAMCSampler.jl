@@ -25,7 +25,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
   push!(
     body,
     :(
-      if _job.sstate.count >= 4
+      if _job.sstate.count > _job.sampler.t0
         _job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)
       end
     )
@@ -188,6 +188,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
     )
   )
 
+  # Once fully migrated to Julia 0.5 or higher, use LinAlg.lowrankupdate instead of chol in order to reduce complexity
   push!(ambody, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
 
   push!(

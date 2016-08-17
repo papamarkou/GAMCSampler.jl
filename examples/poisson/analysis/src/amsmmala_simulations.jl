@@ -3,7 +3,7 @@ using Lora
 using PGUManifoldMC
 
 DATADIR = "../../data"
-SUBDATADIR = "psmmala"
+SUBDATADIR = "amsmmala"
 
 nchains = 10
 nmcmc = 110000
@@ -43,14 +43,18 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = PSMMALA(
+sampler = AMSMMALA(
   0.02,
-  identitymala=false,
-  update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 7.),
-  initupdatetensor=(true, false)
+  update=(sstate, pstate, i, tot) -> mod_update!(sstate, pstate, i, tot, 7)
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
+
+mctuner = PSMMALAMCTuner(
+  VanillaMCTuner(verbose=false),
+  VanillaMCTuner(verbose=false),
+  AcceptanceRateMCTuner(0.27, score=x -> logistic_rate_score(x, 3.), verbose=false)
+)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
@@ -67,7 +71,7 @@ while i <= nchains
     sampler,
     mcrange,
     v0,
-    tuner=AcceptanceRateMCTuner(0.6, score=x -> logistic_rate_score(x, 3.), verbose=false),
+    tuner=mctuner,
     outopts=outopts
   )
 
@@ -83,12 +87,12 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.6 < ratio < 0.7
+  if 0.225 < ratio < 0.275
     writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
     times[i] = runtime
-    stepsizes[i] = job.sstate.tune.step
+    stepsizes[i] = job.sstate.tune.totaltune.step
     nupdates[i] = job.sstate.updatetensorcount
 
     println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)

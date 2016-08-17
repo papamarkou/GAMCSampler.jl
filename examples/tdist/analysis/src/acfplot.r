@@ -1,7 +1,7 @@
-library(data.table)
-library(stringr)
+# library(data.table)
+# library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala_reverse", "psmmala")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "alsmmala", "amsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -14,8 +14,8 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 maxlag <- 50
-ci <- 7
-pi <- 18
+ci <- 1
+pi <- 10
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)
 
@@ -29,9 +29,9 @@ for (j in 1:nsamplerdirs) {
 
 sqrtnpostburnin <- sqrt(npostburnin)
 
-cols <- c("green", "blue", "red")
+cols <- c("green", "blue", "orange", "red")
 
-pdf(file=file.path(OUTDIR, "tdist_acfplot.pdf"), width=10, height=6)
+# pdf(file=file.path(OUTDIR, "tdist_acfplot.pdf"), width=10, height=6)
 
 plot(
   0:maxlag,
@@ -74,9 +74,18 @@ lines(
   pch=20
 )
 
+lines(
+  0:maxlag,
+  cors[, 4],
+  type="o",
+  col=cols[4],
+  lwd=2,
+  pch=20
+)
+
 legend(
   36, 0.6,
-  c("MALA", "SMMALA", "PSMMALA"),
+  c("MALA", "SMMALA", "ALSMMALA", "AMSMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,
@@ -89,4 +98,4 @@ sqrt(npostburnin)
 abline(h=1.96/sqrtnpostburnin, lty=2)
 abline(h=-1.96/sqrtnpostburnin, lty=2)
 
-dev.off()
+# dev.off()

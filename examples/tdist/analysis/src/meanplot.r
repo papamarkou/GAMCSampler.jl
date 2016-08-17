@@ -1,7 +1,7 @@
-library(data.table)
-library(stringr)
+# library(data.table)
+# library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala_reverse", "psmmala")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "alsmmala", "amsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -13,8 +13,8 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 20000
-ci <- 7
+nmeans <- 50000
+ci <- 1
 pi <- 18
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -29,9 +29,9 @@ for (j in 1:nsamplerdirs) {
   }
 }
 
-cols <- c("green", "blue", "red")
+cols <- c("green", "blue", "orange", "red")
 
-pdf(file=file.path(OUTDIR, "tdist_meanplot.pdf"), width=10, height=6)
+# pdf(file=file.path(OUTDIR, "tdist_meanplot.pdf"), width=10, height=6)
 
 plot(
   1:nmeans,
@@ -71,9 +71,17 @@ lines(
   lwd=2
 )
 
+lines(
+  1:nmeans,
+  submeans[, 4],
+  type="l",
+  col=cols[4],
+  lwd=2
+)
+
 legend(
   "topright",
-  c("MALA", "SMMALA", "PSMMALA"),
+  c("MALA", "SMMALA", "ALSMMALA", "AMSMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,
@@ -82,4 +90,4 @@ legend(
   text.width=4000
 )
 
-dev.off()
+# dev.off()

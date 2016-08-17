@@ -389,7 +389,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
 
     push!(burninbody, :(_job.sstate.tune.totaltune.proposed = 0))
 
-    if job.tuner.totaltuner.verbose
+    if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
       push!(burninbody, :(_job.sstate.tune.totaltune.accepted = 0))
       push!(burninbody, :(_job.sstate.tune.totaltune.rate = NaN))
     end

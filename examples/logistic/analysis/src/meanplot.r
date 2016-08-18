@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala", "psmmala")
+SAMPLERDIRS <- c("mala", "smmala", "amsmmala", "alsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -15,8 +15,8 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 10000
-ci <- 8
+nmeans <- 50000
+ci <- 5
 pi <- 2
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -31,7 +31,7 @@ for (j in 1:nsamplerdirs) {
   }
 }
 
-cols <- c("green", "blue", "red")
+cols <- c("green", "blue", "red", "orange")
 
 pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
 
@@ -39,7 +39,7 @@ plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(0.3, 1),
+  ylim=c(0.5, 1),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -51,8 +51,8 @@ plot(
 
 axis(
   2,
-  at=seq(0.4, 1, by=0.2),
-  labels=seq(0.4, 1, by=0.2),
+  at=seq(0.5, 1, by=0.1),
+  labels=seq(0.5, 1, by=0.1),
   cex.axis=1.8,
   las=1
 )
@@ -73,9 +73,17 @@ lines(
   lwd=2
 )
 
+lines(
+  1:nmeans,
+  submeans[, 4],
+  type="l",
+  col=cols[4],
+  lwd=2
+)
+
 legend(
-  "topright",
-  c("MALA", "SMMALA", "PSMMALA"),
+  35000, 1,
+  c("MALA", "SMMALA", "AMSMMALA", "ALSMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,

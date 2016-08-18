@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala_reverse", "alsmmala", "amsmmala")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "amsmmala", "alsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -29,7 +29,7 @@ for (j in 1:nsamplerdirs) {
 
 sqrtnpostburnin <- sqrt(npostburnin)
 
-cols <- c("green", "blue", "orange", "red")
+cols <- c("green", "blue", "red", "orange")
 
 pdf(file=file.path(OUTDIR, "tdist_acfplot.pdf"), width=10, height=6)
 
@@ -85,7 +85,7 @@ lines(
 
 legend(
   36, 0.6,
-  c("MALA", "SMMALA", "ALSMMALA", "AMSMMALA"),
+  c("MALA", "SMMALA", "AMSMMALA", "ALSMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,

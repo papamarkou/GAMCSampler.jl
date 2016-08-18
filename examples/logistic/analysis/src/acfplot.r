@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala", "alsmmala", "amsmmala")
+SAMPLERDIRS <- c("mala", "smmala", "amsmmala", "alsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -16,7 +16,7 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 maxlag <- 40
-ci <- 7
+ci <- 5
 pi <- 2
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)
@@ -31,9 +31,9 @@ for (j in 1:nsamplerdirs) {
 
 sqrtnpostburnin <- sqrt(npostburnin)
 
-cols <- c("green", "blue", "orange", "red")
+cols <- c("green", "blue", "red", "orange")
 
-# pdf(file=file.path(OUTDIR, "logit_acfplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "logit_acfplot.pdf"), width=10, height=6)
 
 plot(
   0:maxlag,
@@ -87,7 +87,7 @@ lines(
 
 legend(
   "topright",
-  c("MALA", "SMMALA", "ALSMMALA", "AMSMMALA"),
+  c("MALA", "SMMALA", "AMSMMALA", "ALSMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,
@@ -101,4 +101,4 @@ sqrt(npostburnin)
 abline(h=1.96/sqrtnpostburnin, lty=2)
 abline(h=-1.96/sqrtnpostburnin, lty=2)
 
-# dev.off()
+dev.off()

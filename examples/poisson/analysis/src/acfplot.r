@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala", "psmmala")
+SAMPLERDIRS <- c("mala", "smmala", "amsmmala", "alsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -16,7 +16,7 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 maxlag <- 40
-ci <- 6
+ci <- 3
 pi <- 2
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)
@@ -31,7 +31,7 @@ for (j in 1:nsamplerdirs) {
 
 sqrtnpostburnin <- sqrt(npostburnin)
 
-cols <- c("green", "blue", "red")
+cols <- c("green", "blue", "red", "orange")
 
 pdf(file=file.path(OUTDIR, "poisson_acfplot.pdf"), width=10, height=6)
 
@@ -76,9 +76,18 @@ lines(
   pch=20
 )
 
+lines(
+  0:maxlag,
+  cors[, 4],
+  type="o",
+  col=cols[4],
+  lwd=2,
+  pch=20
+)
+
 legend(
   "topright",
-  c("MALA", "SMMALA", "PSMMALA"),
+  c("MALA", "SMMALA", "AMSMMALA", "ALSMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,

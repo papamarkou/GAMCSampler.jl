@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("mala", "smmala", "psmmala")
+SAMPLERDIRS <- c("mala", "smmala", "amsmmala", "alsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
@@ -16,7 +16,7 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
-ci <- 6
+ci <- 3
 pi <- 2
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -31,7 +31,7 @@ for (j in 1:nsamplerdirs) {
   }
 }
 
-cols <- c("green", "blue", "red")
+cols <- c("green", "blue", "red", "orange")
 
 pdf(file=file.path(OUTDIR, "poisson_meanplot.pdf"), width=10, height=6)
 
@@ -39,7 +39,7 @@ plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(0.07, 0.15),
+  ylim=c(0.07, 0.16),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -73,11 +73,19 @@ lines(
   lwd=2
 )
 
+lines(
+  1:nmeans,
+  submeans[, 4],
+  type="l",
+  col=cols[4],
+  lwd=2
+)
+
 legend(
   "topright",
-  c("MALA", "SMMALA", "PSMMALA"),
-  lty=c(1, 1, 1),
-  lwd=c(5, 5, 5),
+  c("MALA", "SMMALA", "AMSMMALA", "ALSMMALA"),
+  lty=c(1, 1, 1, 1),
+  lwd=c(5, 5, 5, 5),
   col=cols,
   cex=1.5,
   bty="n",

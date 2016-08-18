@@ -10,8 +10,8 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
-ci <- 7
-pi <- 18
+ci <- 3
+pi <- 7
 
 chains <- t(fread(
   file.path(DATADIR, SUBDATADIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE

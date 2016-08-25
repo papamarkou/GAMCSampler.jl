@@ -177,19 +177,23 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
   push!(
     ambody,
     :(
-      covariance!(
-        _job.sstate.newinvtensor,
-        _job.sstate.oldinvtensor,
-        _job.sstate.count-2,
-        _job.pstate.value,
-        _job.sstate.lastmean,
-        _job.sstate.secondlastmean
-      )
+      if _job.sstate.pastupdatetensor
+        # Once fully migrated to Julia 0.5 or higher, use LinAlg.lowrankupdate instead of chol in order to reduce complexity
+        _job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})
+      else
+        covariance!(
+          _job.sstate.newinvtensor,
+          _job.sstate.oldinvtensor,
+          _job.sstate.count-2,
+          _job.pstate.value,
+          _job.sstate.lastmean,
+          _job.sstate.secondlastmean
+        )
+
+        _job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})
+      end
     )
   )
-
-  # Once fully migrated to Julia 0.5 or higher, use LinAlg.lowrankupdate instead of chol in order to reduce complexity
-  push!(ambody, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
 
   push!(
     ambody,

@@ -1,8 +1,8 @@
-### ALSMMALA state subtypes
+### GUM state subtypes
 
-## MuvALSMMALAState holds the internal state ("local variables") of the ALSMMALA sampler for multivariate parameters
+## MuvGUMState holds the internal state ("local variables") of the GUM sampler for multivariate parameters
 
-type MuvALSMMALAState <: MuvPSMMALAState
+type MuvGUMState <: MuvPSMMALAState
   pstate::ParameterState{Continuous, Multivariate}
   tune::MCTunerState
   sqrttunestep::Real
@@ -13,12 +13,15 @@ type MuvALSMMALAState <: MuvPSMMALAState
   cholinvtensor::RealLowerTriangular
   newfirstterm::RealVector
   oldfirstterm::RealVector
+  SST::RealMatrix
+  randnsample::RealVector
+  η::Real
   presentupdatetensor::Bool
   pastupdatetensor::Bool
   count::Integer
   updatetensorcount::Integer
 
-  function MuvALSMMALAState(
+  function MuvGUMState(
     pstate::ParameterState{Continuous, Multivariate},
     tune::MCTunerState,
     sqrttunestep::Real,
@@ -29,6 +32,9 @@ type MuvALSMMALAState <: MuvPSMMALAState
     cholinvtensor::RealLowerTriangular,
     newfirstterm::RealVector,
     oldfirstterm::RealVector,
+    SST::RealMatrix,
+    randnsample::RealVector,
+    η::Real,
     presentupdatetensor::Bool,
     pastupdatetensor::Bool,
     count::Integer,
@@ -49,6 +55,9 @@ type MuvALSMMALAState <: MuvPSMMALAState
       cholinvtensor,
       newfirstterm,
       oldfirstterm,
+      SST,
+      randnsample,
+      η,
       presentupdatetensor,
       pastupdatetensor,
       count,
@@ -57,8 +66,8 @@ type MuvALSMMALAState <: MuvPSMMALAState
   end
 end
 
-MuvALSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerState=PSMMALAMCTune()) =
-  MuvALSMMALAState(
+MuvGUMState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerState=PSMMALAMCTune()) =
+  MuvGUMState(
   pstate,
   tune,
   NaN,
@@ -69,50 +78,52 @@ MuvALSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTuner
   RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size),
+  Array(eltype(pstate), pstate.size, pstate.size),
+  Array(eltype(pstate), pstate.size),
+  NaN,
   false,
   false,
   0,
   0
 )
 
-### Metropolis-adjusted Langevin Algorithm (ALSMMALA)
+### Metropolis-adjusted Langevin Algorithm (GUM)
 
-immutable ALSMMALA <: PSMMALA
+immutable GUM <: PSMMALA
   driftstep::Real
-  identitymala::Bool
   update!::Function
   transform::Union{Function, Void}
-  initupdatetensor::Tuple{Bool,Bool} # The tuple ordinates refer to (sstate.presentupdatetensor, sstate.pastupdatetensor)
+  t0::Integer
+  targetrate::Real
+  γ::Real
 
-  function ALSMMALA(
-    driftstep::Real,
-    identitymala::Bool,
-    update!::Function,
-    transform::Union{Function, Void},
-    initupdatetensor::Tuple{Bool,Bool}
-    )
+  function GUM(driftstep::Real, update!::Function, transform::Union{Function, Void}, t0::Integer, targetrate::Real, γ::Real)
     @assert driftstep > 0 "Drift step is not positive"
-    new(driftstep, identitymala, update!, transform, initupdatetensor)
+    @assert t0 > 0 "t0 is not positive"
+    @assert 0 < targetrate < 1 "Target acceptance rate should be between 0 and 1"
+    @assert 0.5 < γ <= 1 "Exponent of stepsize must be greater than 0.5 and less or equal to 1"
+    new(driftstep, update!, transform, t0, targetrate, γ)
   end
 end
 
-ALSMMALA(
+GUM(
   driftstep::Real=1.;
-  identitymala::Bool=false,
   update::Function=rand_update!,
   transform::Union{Function, Void}=nothing,
-  initupdatetensor::Tuple{Bool,Bool}=(false, false)
+  t0::Integer=3,
+  targetrate::Real=0.234,
+  γ::Real=0.7
 ) =
-  ALSMMALA(driftstep, identitymala, update, transform, initupdatetensor)
+  GUM(driftstep, update, transform, t0, targetrate, γ)
 
-### Initialize ALSMMALA sampler
+### Initialize GUM sampler
 
 ## Initialize parameter state
 
 function initialize!(
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA
+  sampler::GUM
 )
   parameter.uptotensorlogtarget!(pstate)
   if sampler.transform != nothing
@@ -124,9 +135,9 @@ function initialize!(
   @assert all(isfinite(pstate.tensorlogtarget)) "Tensor of log-target not finite: initial values out of support"
 end
 
-## Initialize ALSMMALA state
+## Initialize GUM state
 
-tuner_state(sampler::ALSMMALA, tuner::PSMMALAMCTuner) =
+tuner_state(sampler::GUM, tuner::PSMMALAMCTuner) =
   PSMMALAMCTune(
     BasicMCTune(NaN, 0, 0, tuner.smmalatuner.period),
     BasicMCTune(NaN, 0, 0, tuner.malatuner.period),
@@ -134,21 +145,22 @@ tuner_state(sampler::ALSMMALA, tuner::PSMMALAMCTuner) =
   )
 
 function sampler_state(
-  sampler::ALSMMALA,
+  sampler::GUM,
   tuner::MCTuner,
   pstate::ParameterState{Continuous, Multivariate},
   vstate::VariableStateVector
 )
-  sstate = MuvALSMMALAState(generate_empty(pstate), tuner_state(sampler, tuner))
+  sstate = MuvGUMState(generate_empty(pstate), tuner_state(sampler, tuner))
   sstate.sqrttunestep = sqrt(sampler.driftstep)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
+  sstate.presentupdatetensor = true
+  sstate.pastupdatetensor = false
   sstate
 end
 
-### Reset ALSMMALA sampler
+### Reset GUM sampler
 
 ## Reset parameter state
 
@@ -156,7 +168,7 @@ function reset!(
   pstate::ParameterState{Continuous, Multivariate},
   x::RealVector,
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA
+  sampler::GUM
 )
   pstate.value = copy(x)
   parameter.uptotensorlogtarget!(pstate)
@@ -166,10 +178,10 @@ end
 ## Reset sampler state
 
 function reset!(
-  sstate::PSMMALAState,
+  sstate::MuvGUMState,
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA,
+  sampler::GUM,
   tuner::MCTuner
 )
   reset!(sstate.tune, sampler, tuner)
@@ -177,9 +189,11 @@ function reset!(
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
+  sstate.presentupdatetensor = true
+  sstate.pastupdatetensor = false
 end
 
-Base.show(io::IO, sampler::ALSMMALA) = print(io, "ALSMMALA sampler: drift step = $(sampler.driftstep)")
+Base.show(io::IO, sampler::GUM) =
+  print(io, "GUM sampler: drift step = $(sampler.driftstep), target rate = $(sampler.targetrate), γ = $(sampler.γ)")
 
-Base.writemime(io::IO, ::MIME"text/plain", sampler::ALSMMALA) = show(io, sampler)
+Base.writemime(io::IO, ::MIME"text/plain", sampler::GUM) = show(io, sampler)

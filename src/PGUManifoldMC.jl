@@ -23,7 +23,11 @@ import Lora:
   variate_form
 
 export
+  GUM,
+  MuvALSMMALAState,
   MuvAMSMMALAState,
+  MuvGUMState,
+  MuvPSMMALAState,
   ALSMMALA,
   AMSMMALA,
   ALSMMALAState,
@@ -50,13 +54,18 @@ export
   rand_update!,
   smmala_only_update!
 
+include("stats/schedule.jl")
+
 include("tuners/PSMMALAMCTuner.jl")
 
 include("samplers/samplers.jl")
+
 include("samplers/ALSMMALA.jl")
 include("samplers/AMSMMALA.jl")
+include("samplers/GUM.jl")
 
 include("samplers/iterate/ALSMMALA.jl")
 include("samplers/iterate/AMSMMALA.jl")
+include("samplers/iterate/GUM.jl")
 
 end # module

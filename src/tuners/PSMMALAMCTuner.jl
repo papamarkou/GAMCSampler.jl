@@ -20,4 +20,4 @@ end
 
 Base.show(io::IO, tuner::PSMMALAMCTuner) = print(io, "PSMMALAMCTuner")
 
-Base.writemime(io::IO, ::MIME"text/plain", tuner::PSMMALAMCTuner) = show(io, tuner)
+Base.show(io::IO, ::MIME"text/plain", tuner::PSMMALAMCTuner) = show(io, tuner)

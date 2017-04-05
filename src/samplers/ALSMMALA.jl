@@ -112,7 +112,8 @@ ALSMMALA(
 function initialize!(
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA
+  sampler::ALSMMALA,
+  outopts::Dict
 )
   parameter.uptotensorlogtarget!(pstate)
   if sampler.transform != nothing
@@ -122,6 +123,11 @@ function initialize!(
   @assert isfinite(pstate.logtarget) "Log-target not finite: initial value out of support"
   @assert all(isfinite(pstate.gradlogtarget)) "Gradient of log-target not finite: initial values out of support"
   @assert all(isfinite(pstate.tensorlogtarget)) "Tensor of log-target not finite: initial values out of support"
+
+  if !isempty(outopts[:diagnostics])
+    pstate.diagnostickeys = copy(outopts[:diagnostics])
+    pstate.diagnosticvalues = Array(Any, length(pstate.diagnostickeys))
+  end
 end
 
 ## Initialize ALSMMALA state
@@ -134,15 +140,16 @@ tuner_state(sampler::ALSMMALA, tuner::PSMMALAMCTuner) =
   )
 
 function sampler_state(
+  parameter::Parameter{Continuous, Multivariate},
   sampler::ALSMMALA,
   tuner::MCTuner,
   pstate::ParameterState{Continuous, Multivariate},
   vstate::VariableStateVector
 )
-  sstate = MuvALSMMALAState(generate_empty(pstate), tuner_state(sampler, tuner))
+  sstate = MuvALSMMALAState(generate_empty(pstate, parameter.diffmethods, parameter.diffopts), tuner_state(sampler, tuner))
   sstate.sqrttunestep = sqrt(sampler.driftstep)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
-  sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
+  sstate.cholinvtensor = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
   sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
   sstate
@@ -182,4 +189,4 @@ end
 
 Base.show(io::IO, sampler::ALSMMALA) = print(io, "ALSMMALA sampler: drift step = $(sampler.driftstep)")
 
-Base.writemime(io::IO, ::MIME"text/plain", sampler::ALSMMALA) = show(io, sampler)
+Base.show(io::IO, ::MIME"text/plain", sampler::ALSMMALA) = show(io, sampler)

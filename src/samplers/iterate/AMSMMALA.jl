@@ -1,5 +1,5 @@
 function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
-  result::Expr
+  local result::Expr
   burninbody = []
   ambody = []
   smmalapasttensorbody = []
@@ -47,7 +47,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
 
   push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-  push!(smmalapasttensorbody, :(_job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+  push!(smmalapasttensorbody, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))))
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
@@ -133,7 +133,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
 
   push!(update, :(_job.sstate.oldinvtensor = copy(_job.sstate.newinvtensor)))
 
-  push!(update, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
+  push!(update, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.newinvtensor)))))
 
   push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
 
@@ -179,7 +179,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
     :(
       if _job.sstate.pastupdatetensor
         # Once fully migrated to Julia 0.5 or higher, use LinAlg.lowrankupdate instead of chol in order to reduce complexity
-        _job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})
+        _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))
       else
         covariance!(
           _job.sstate.newinvtensor,
@@ -190,7 +190,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
           _job.sstate.secondlastmean
         )
 
-        _job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})
+        _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.newinvtensor)))
       end
     )
   )

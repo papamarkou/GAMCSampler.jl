@@ -108,7 +108,8 @@ AMSMMALA(driftstep::Real=1.; update::Function=rand_update!, transform::Union{Fun
 function initialize!(
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::AMSMMALA
+  sampler::AMSMMALA,
+  outopts::Dict
 )
   parameter.uptotensorlogtarget!(pstate)
   if sampler.transform != nothing
@@ -118,6 +119,11 @@ function initialize!(
   @assert isfinite(pstate.logtarget) "Log-target not finite: initial value out of support"
   @assert all(isfinite(pstate.gradlogtarget)) "Gradient of log-target not finite: initial values out of support"
   @assert all(isfinite(pstate.tensorlogtarget)) "Tensor of log-target not finite: initial values out of support"
+
+  if !isempty(outopts[:diagnostics])
+    pstate.diagnostickeys = copy(outopts[:diagnostics])
+    pstate.diagnosticvalues = Array(Any, length(pstate.diagnostickeys))
+  end
 end
 
 ## Initialize AMSMMALA state
@@ -130,16 +136,17 @@ tuner_state(sampler::AMSMMALA, tuner::PSMMALAMCTuner) =
   )
 
 function sampler_state(
+  parameter::Parameter{Continuous, Multivariate},
   sampler::AMSMMALA,
   tuner::MCTuner,
   pstate::ParameterState{Continuous, Multivariate},
   vstate::VariableStateVector
 )
-  sstate = MuvAMSMMALAState(generate_empty(pstate), tuner_state(sampler, tuner))
+  sstate = MuvAMSMMALAState(generate_empty(pstate, parameter.diffmethods, parameter.diffopts), tuner_state(sampler, tuner))
   sstate.sqrttunestep = sqrt(sampler.driftstep)
   sstate.lastmean = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
-  sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
+  sstate.cholinvtensor = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
   sstate.presentupdatetensor = true
   sstate.pastupdatetensor = false
@@ -182,4 +189,4 @@ end
 
 Base.show(io::IO, sampler::AMSMMALA) = print(io, "AMSMMALA sampler: drift step = $(sampler.driftstep)")
 
-Base.writemime(io::IO, ::MIME"text/plain", sampler::AMSMMALA) = show(io, sampler)
+Base.show(io::IO, ::MIME"text/plain", sampler::AMSMMALA) = show(io, sampler)

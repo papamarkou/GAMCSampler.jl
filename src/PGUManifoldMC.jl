@@ -1,14 +1,14 @@
 module PGUManifoldMC
 
 using Distributions
-using Lora
+using Klara
 
 import Base:
   cor,
   show,
   writemime
 
-import Lora:
+import Klara:
   RealLowerTriangular,
   codegen,
   ess,
@@ -62,10 +62,8 @@ include("samplers/samplers.jl")
 
 include("samplers/ALSMMALA.jl")
 include("samplers/AMSMMALA.jl")
-include("samplers/GUM.jl")
 
 include("samplers/iterate/ALSMMALA.jl")
 include("samplers/iterate/AMSMMALA.jl")
-include("samplers/iterate/GUM.jl")
 
 end # module

@@ -1,5 +1,5 @@
 function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
-  result::Expr
+  local result::Expr
   burninbody = []
   malabody = []
   smmalapasttensorbody = []
@@ -40,7 +40,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
 
   push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-  push!(smmalapasttensorbody, :(_job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+  push!(smmalapasttensorbody, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))))
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
@@ -126,7 +126,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
 
   push!(update, :(_job.sstate.oldinvtensor = copy(_job.sstate.newinvtensor)))
 
-  push!(update, :(_job.sstate.cholinvtensor = chol(_job.sstate.newinvtensor, Val{:L})))
+  push!(update, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.newinvtensor)))))
 
   push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
 
@@ -140,9 +140,10 @@ function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
     push!(update, :(_job.pstate.logprior = _job.sstate.pstate.logprior))
   end
 
-  if in(:accept, job.outopts[:diagnostics])
-    push!(update, :(_job.pstate.diagnosticvalues[1] = true))
-    push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
+  dindex = findfirst(job.outopts[:diagnostics], :accept)
+  if dindex != 0
+    push!(update, :(_job.pstate.diagnosticvalues[$dindex] = true))
+    push!(noupdate, :(_job.pstate.diagnosticvalues[$dindex] = false))
   end
 
   if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
@@ -174,7 +175,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
 
     push!(malabody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-    push!(malabody, :(_job.sstate.cholinvtensor = chol(_job.sstate.oldinvtensor, Val{:L})))
+    push!(malabody, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))))
   else
     push!(malabody, :(
         if (!_job.sstate.pastupdatetensor && !_job.pstate.diagnosticvalues[1])

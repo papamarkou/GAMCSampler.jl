@@ -1,5 +1,5 @@
 using Distributions
-using Lora
+using Klara
 using PGUManifoldMC
 
 DATADIR = "../../data"

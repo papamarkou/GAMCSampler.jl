@@ -178,8 +178,21 @@ function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
     push!(malabody, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))))
   else
     push!(malabody, :(
-        if (!_job.sstate.pastupdatetensor && !_job.pstate.diagnosticvalues[1])
+        if !_job.sstate.pastupdatetensor
+          covariance!(
+            _job.sstate.oldinvtensor,
+            _job.sstate.oldinvtensor,
+            _job.sstate.count-2,
+            _job.pstate.value,
+            _job.sstate.lastmean,
+            _job.sstate.secondlastmean
+          )
+
+          _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))
+
           _job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget
+
+          _job.pstate.tensorlogtarget = inv(_job.sstate.oldinvtensor)
         end
       )
     )
@@ -282,6 +295,10 @@ function codegen(::Type{Val{:iterate}}, ::Type{ALSMMALA}, job::BasicMCJob)
   )
 
   push!(body, Expr(:if, :(_job.sstate.presentupdatetensor), Expr(:block, smmalabody...), Expr(:block, malabody...)))
+
+  push!(body, :(_job.sstate.secondlastmean = copy(_job.sstate.lastmean)))
+
+  push!(body, :(mean!(_job.sstate.lastmean, _job.sstate.count, _job.pstate.value)))
 
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 

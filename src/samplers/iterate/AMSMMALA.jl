@@ -180,6 +180,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
       if _job.sstate.pastupdatetensor
         # Once fully migrated to Julia 0.5 or higher, use LinAlg.lowrankupdate instead of chol in order to reduce complexity
         _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))
+        # _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(5.112120999999998*_job.sstate.oldinvtensor/11+2.500000000000001e-5/11)))
       else
         covariance!(
           _job.sstate.newinvtensor,
@@ -191,6 +192,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{AMSMMALA}, job::BasicMCJob)
         )
 
         _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.newinvtensor)))
+        # _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(5.112120999999998*_job.sstate.newinvtensor/11+2.500000000000001e-5/11)))
       end
     )
   )

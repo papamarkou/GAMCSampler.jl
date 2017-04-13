@@ -8,6 +8,8 @@ type MuvALSMMALAState <: MuvPSMMALAState
   sqrttunestep::Real
   ratio::Real
   μ::RealVector
+  lastmean::RealVector
+  secondlastmean::RealVector
   newinvtensor::RealMatrix
   oldinvtensor::RealMatrix
   cholinvtensor::RealLowerTriangular
@@ -24,6 +26,8 @@ type MuvALSMMALAState <: MuvPSMMALAState
     sqrttunestep::Real,
     ratio::Real,
     μ::RealVector,
+    lastmean::RealVector,
+    secondlastmean::RealVector,
     newinvtensor::RealMatrix,
     oldinvtensor::RealMatrix,
     cholinvtensor::RealLowerTriangular,
@@ -44,6 +48,8 @@ type MuvALSMMALAState <: MuvPSMMALAState
       sqrttunestep,
       ratio,
       μ,
+      lastmean,
+      secondlastmean,
       newinvtensor,
       oldinvtensor,
       cholinvtensor,
@@ -63,6 +69,8 @@ MuvALSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTuner
   tune,
   NaN,
   NaN,
+  Array(eltype(pstate), pstate.size),
+  Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
   Array(eltype(pstate), pstate.size, pstate.size),
@@ -148,6 +156,7 @@ function sampler_state(
 )
   sstate = MuvALSMMALAState(generate_empty(pstate, parameter.diffmethods, parameter.diffopts), tuner_state(sampler, tuner))
   sstate.sqrttunestep = sqrt(sampler.driftstep)
+  sstate.lastmean = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget

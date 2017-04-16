@@ -253,7 +253,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
 
   push!(body, :(_job.sstate.secondlastmean = copy(_job.sstate.lastmean)))
 
-  push!(body, :(mean!(_job.sstate.lastmean, _job.sstate.count, _job.pstate.value)))
+  push!(body, :(recursive_mean!(_job.sstate.lastmean, _job.sstate.lastmean, _job.sstate.count, _job.pstate.value)))
 
   push!(body, :(_job.sstate.pastupdatetensor = _job.sstate.presentupdatetensor))
 

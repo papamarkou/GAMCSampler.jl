@@ -3,10 +3,7 @@ module MAMALASampler
 using Distributions
 using Klara
 
-import Base:
-  cor,
-  show,
-  writemime
+import Base: show
 
 import Klara:
   RealLowerTriangular,
@@ -15,6 +12,7 @@ import Klara:
   format_percentage,
   generate_empty,
   initialize!,
+  recursive_mean!,
   reset!,
   sampler_state,
   tune!,

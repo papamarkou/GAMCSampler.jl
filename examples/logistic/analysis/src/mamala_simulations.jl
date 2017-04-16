@@ -1,9 +1,9 @@
 using Distributions
 using Klara
-using PGUManifoldMC
+using MAMALASampler
 
 DATADIR = "../../data"
-SUBDATADIR = "amsmmala"
+SUBDATADIR = "mamala"
 
 nchains = 10
 nmcmc = 110000
@@ -42,14 +42,14 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = AMSMMALA(
+sampler = MAMALA(
   0.02,
   update=(sstate, pstate, i, tot) -> mod_update!(sstate, pstate, i, tot, 7)
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
-mctuner = PSMMALAMCTuner(
+mctuner = MAMALAMCTuner(
   VanillaMCTuner(verbose=false),
   VanillaMCTuner(verbose=false),
   AcceptanceRateMCTuner(0.27, verbose=false)

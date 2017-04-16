@@ -133,7 +133,7 @@ end
 tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =
   MAMALAMCTune(
     BasicMCTune(NaN, 0, 0, tuner.smmalatuner.period),
-    BasicMCTune(NaN, 0, 0, tuner.malatuner.period),
+    BasicMCTune(NaN, 0, 0, tuner.amtuner.period),
     BasicMCTune(sampler.driftstep, 0, 0, tuner.totaltuner.period)
   )
 

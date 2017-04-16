@@ -16,7 +16,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
   if (
     job.tuner.totaltuner.verbose ||
     job.tuner.smmalatuner.verbose ||
-    job.tuner.malatuner.verbose ||
+    job.tuner.amtuner.verbose ||
     isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
   )
     push!(body, :(_job.sstate.tune.totaltune.proposed += 1))
@@ -170,8 +170,8 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     )
   )
 
-  if job.tuner.malatuner.verbose
-    push!(ambody, :(_job.sstate.tune.malatune.proposed += 1))
+  if job.tuner.amtuner.verbose
+    push!(ambody, :(_job.sstate.tune.amtune.proposed += 1))
   end
 
   push!(
@@ -235,8 +235,8 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     push!(update, :(_job.sstate.tune.totaltune.accepted += 1))
   end
 
-  if job.tuner.malatuner.verbose
-    push!(update, :(_job.sstate.tune.malatune.accepted += 1))
+  if job.tuner.amtuner.verbose
+    push!(update, :(_job.sstate.tune.amtune.accepted += 1))
   end
 
   push!(
@@ -269,15 +269,15 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     push!(burninbody, :(rate!(_job.sstate.tune.smmalatune)))
   end
 
-  if job.tuner.malatuner.verbose
+  if job.tuner.amtuner.verbose
     push!(
       burninbody,
-      :(_job.sstate.tune.malafrequency = _job.sstate.tune.malatune.proposed/_job.sstate.tune.totaltune.proposed)
+      :(_job.sstate.tune.amfrequency = _job.sstate.tune.amtune.proposed/_job.sstate.tune.totaltune.proposed)
     )
-    push!(burninbody, :(rate!(_job.sstate.tune.malatune)))
+    push!(burninbody, :(rate!(_job.sstate.tune.amtune)))
   end
 
-  if job.tuner.totaltuner.verbose || job.tuner.smmalatuner.verbose || job.tuner.malatuner.verbose
+  if job.tuner.totaltuner.verbose || job.tuner.smmalatuner.verbose || job.tuner.amtuner.verbose
     fmt_tot_iter = format_iteration(ndigits(job.range.burnin))
     fmt_burnin_iter = format_iteration(ndigits(job.tuner.totaltuner.period))
     fmt_perc = format_percentage()
@@ -320,20 +320,20 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
       )))
     end
 
-    if job.tuner.malatuner.verbose
+    if job.tuner.amtuner.verbose
       push!(burninbody, :(println(
-        "  MALA  : ",
-        $(fmt_burnin_iter)(_job.sstate.tune.malatune.accepted),
+        "  AM    : ",
+        $(fmt_burnin_iter)(_job.sstate.tune.amtune.accepted),
         "/",
-        $(fmt_burnin_iter)(_job.sstate.tune.malatune.proposed),
+        $(fmt_burnin_iter)(_job.sstate.tune.amtune.proposed),
         " (",
-        $(fmt_perc)(100*_job.sstate.tune.malatune.rate),
+        $(fmt_perc)(100*_job.sstate.tune.amtune.rate),
         "%) acceptance rate, ",
-        $(fmt_burnin_iter)(_job.sstate.tune.malatune.proposed),
+        $(fmt_burnin_iter)(_job.sstate.tune.amtune.proposed),
         "/",
         $(fmt_burnin_iter)(_job.sstate.tune.totaltune.proposed),
         " (",
-        $(fmt_perc)(100*_job.sstate.tune.malafrequency),
+        $(fmt_perc)(100*_job.sstate.tune.amfrequency),
         "%) running frequency"
       )))
     end
@@ -348,14 +348,14 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     push!(burninbody, :(reset_burnin!(_job.sstate.tune.smmalatune)))
   end
 
-  if job.tuner.malatuner.verbose
-    push!(burninbody, :(reset_burnin!(_job.sstate.tune.malatune)))
+  if job.tuner.amtuner.verbose
+    push!(burninbody, :(reset_burnin!(_job.sstate.tune.amtune)))
   end
 
   if (
     job.tuner.totaltuner.verbose ||
     job.tuner.smmalatuner.verbose ||
-    job.tuner.malatuner.verbose ||
+    job.tuner.amtuner.verbose ||
     isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
   )
     push!(burninbody, :(_job.sstate.tune.totaltune.totproposed += _job.sstate.tune.totaltune.proposed))

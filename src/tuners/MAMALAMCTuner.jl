@@ -1,20 +1,20 @@
 type MAMALAMCTune <: MCTunerState
   smmalatune::BasicMCTune
-  malatune::BasicMCTune
+  amtune::BasicMCTune
   totaltune::BasicMCTune
   smmalafrequency::Real
-  malafrequency::Real
+  amfrequency::Real
 end
 
-MAMALAMCTune(smmalatune::BasicMCTune, malatune::BasicMCTune, totaltune::BasicMCTune) =
-  MAMALAMCTune(smmalatune, malatune, totaltune, NaN, NaN)
+MAMALAMCTune(smmalatune::BasicMCTune, amtune::BasicMCTune, totaltune::BasicMCTune) =
+  MAMALAMCTune(smmalatune, amtune, totaltune, NaN, NaN)
 
 MAMALAMCTune(smmalastep::Real=1., malastep::Real=1.) =
-  MAMALAMCTune(BasicMCTune(smmalastep), BasicMCTune(malastep), BasicMCTune(1.), NaN, NaN)
+  MAMALAMCTune(BasicMCTune(smmalastep), BasicMCTune(NaN), BasicMCTune(1.), NaN, NaN)
 
 immutable MAMALAMCTuner <: MCTuner
   smmalatuner::VanillaMCTuner
-  malatuner::VanillaMCTuner
+  amtuner::VanillaMCTuner
   totaltuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}
 end
 

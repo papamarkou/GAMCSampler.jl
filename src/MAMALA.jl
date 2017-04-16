@@ -1,4 +1,4 @@
-module PGUManifoldMC
+module MAMALA
 
 using Distributions
 using Klara

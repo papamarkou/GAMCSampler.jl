@@ -1,8 +1,10 @@
-### ALSMMALA state subtypes
+### MAMALA state subtypes
 
-## MuvALSMMALAState holds the internal state ("local variables") of the ALSMMALA sampler for multivariate parameters
+abstract MAMALAState <: LMCSamplerState
 
-type MuvALSMMALAState <: MuvPSMMALAState
+## MuvMAMALAState holds the internal state ("local variables") of the MAMALA sampler for multivariate parameters
+
+type MuvMAMALAState <: MAMALAState
   pstate::ParameterState{Continuous, Multivariate}
   tune::MCTunerState
   sqrttunestep::Real
@@ -20,7 +22,7 @@ type MuvALSMMALAState <: MuvPSMMALAState
   count::Integer
   updatetensorcount::Integer
 
-  function MuvALSMMALAState(
+  function MuvMAMALAState(
     pstate::ParameterState{Continuous, Multivariate},
     tune::MCTunerState,
     sqrttunestep::Real,
@@ -63,8 +65,8 @@ type MuvALSMMALAState <: MuvPSMMALAState
   end
 end
 
-MuvALSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerState=PSMMALAMCTune()) =
-  MuvALSMMALAState(
+MuvMAMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTunerState=MAMALAMCTune()) =
+  MuvMAMALAState(
   pstate,
   tune,
   NaN,
@@ -83,44 +85,32 @@ MuvALSMMALAState(pstate::ParameterState{Continuous, Multivariate}, tune::MCTuner
   0
 )
 
-### Metropolis-adjusted Langevin Algorithm (ALSMMALA)
+### Manifold adaptive Metropolis-adjusted Langevin algorithm (MAMALA)
 
-immutable ALSMMALA <: PSMMALA
+immutable MAMALA <: LMCSampler
   driftstep::Real
-  identitymala::Bool
   update!::Function
   transform::Union{Function, Void}
-  initupdatetensor::Tuple{Bool,Bool} # The tuple ordinates refer to (sstate.presentupdatetensor, sstate.pastupdatetensor)
+  t0::Integer
 
-  function ALSMMALA(
-    driftstep::Real,
-    identitymala::Bool,
-    update!::Function,
-    transform::Union{Function, Void},
-    initupdatetensor::Tuple{Bool,Bool}
-    )
+  function MAMALA(driftstep::Real, update!::Function, transform::Union{Function, Void}, t0::Integer)
     @assert driftstep > 0 "Drift step is not positive"
-    new(driftstep, identitymala, update!, transform, initupdatetensor)
+    @assert t0 > 0 "t0 is not positive"
+    new(driftstep, update!, transform, t0)
   end
 end
 
-ALSMMALA(
-  driftstep::Real=1.;
-  identitymala::Bool=false,
-  update::Function=rand_update!,
-  transform::Union{Function, Void}=nothing,
-  initupdatetensor::Tuple{Bool,Bool}=(false, false)
-) =
-  ALSMMALA(driftstep, identitymala, update, transform, initupdatetensor)
+MAMALA(driftstep::Real=1.; update::Function=rand_update!, transform::Union{Function, Void}=nothing, t0::Integer=3) =
+  MAMALA(driftstep, update, transform, t0)
 
-### Initialize ALSMMALA sampler
+### Initialize MAMALA sampler
 
 ## Initialize parameter state
 
 function initialize!(
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA,
+  sampler::MAMALA,
   outopts::Dict
 )
   parameter.uptotensorlogtarget!(pstate)
@@ -138,10 +128,10 @@ function initialize!(
   end
 end
 
-## Initialize ALSMMALA state
+## Initialize MAMALA state
 
-tuner_state(sampler::ALSMMALA, tuner::PSMMALAMCTuner) =
-  PSMMALAMCTune(
+tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =
+  MAMALAMCTune(
     BasicMCTune(NaN, 0, 0, tuner.smmalatuner.period),
     BasicMCTune(NaN, 0, 0, tuner.malatuner.period),
     BasicMCTune(sampler.driftstep, 0, 0, tuner.totaltuner.period)
@@ -149,22 +139,23 @@ tuner_state(sampler::ALSMMALA, tuner::PSMMALAMCTuner) =
 
 function sampler_state(
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA,
+  sampler::MAMALA,
   tuner::MCTuner,
   pstate::ParameterState{Continuous, Multivariate},
   vstate::VariableStateVector
 )
-  sstate = MuvALSMMALAState(generate_empty(pstate, parameter.diffmethods, parameter.diffopts), tuner_state(sampler, tuner))
+  sstate = MuvMAMALAState(generate_empty(pstate, parameter.diffmethods, parameter.diffopts), tuner_state(sampler, tuner))
   sstate.sqrttunestep = sqrt(sampler.driftstep)
   sstate.lastmean = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
+  sstate.presentupdatetensor = true
+  sstate.pastupdatetensor = false
   sstate
 end
 
-### Reset ALSMMALA sampler
+### Reset MAMALA sampler
 
 ## Reset parameter state
 
@@ -172,7 +163,7 @@ function reset!(
   pstate::ParameterState{Continuous, Multivariate},
   x::RealVector,
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA
+  sampler::MAMALA
 )
   pstate.value = copy(x)
   parameter.uptotensorlogtarget!(pstate)
@@ -182,20 +173,101 @@ end
 ## Reset sampler state
 
 function reset!(
-  sstate::PSMMALAState,
+  sstate::MuvMAMALAState,
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::ALSMMALA,
+  sampler::MAMALA,
   tuner::MCTuner
 )
   reset!(sstate.tune, sampler, tuner)
   sstate.sqrttunestep = sqrt(sampler.driftstep)
+  sstate.lastmean = copy(pstate.value)
   sstate.oldinvtensor = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
   sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  sstate.presentupdatetensor, sstate.pastupdatetensor = sampler.initupdatetensor
+  sstate.presentupdatetensor = true
+  sstate.pastupdatetensor = false
 end
 
-Base.show(io::IO, sampler::ALSMMALA) = print(io, "ALSMMALA sampler: drift step = $(sampler.driftstep)")
+### MAMALA schedules
 
-Base.show(io::IO, ::MIME"text/plain", sampler::ALSMMALA) = show(io, sampler)
+am_only_update!(sstate::MuvMAMALAState, pstate::ParameterState{Continuous, Multivariate}, i::Integer, tot::Integer) =
+  sstate.presentupdatetensor = false
+
+cos_update!(
+  sstate::MuvMAMALAState,
+  pstate::ParameterState{Continuous, Multivariate},
+  i::Integer,
+  tot::Integer,
+  a::Real=10.,
+  b::Real=0.2,
+  c::Real=0.2
+) =
+  sstate.presentupdatetensor = rand(Bernoulli(b*cos(a*i*pi/tot)+c))
+
+mod_update!(
+  sstate::MuvMAMALAState,
+  pstate::ParameterState{Continuous, Multivariate},
+  i::Integer,
+  tot::Integer,
+  n::Integer=10
+) =
+  sstate.presentupdatetensor = mod(i, n) == 0 ? true : false
+
+rand_exp_decay_update!(
+  sstate::MuvMAMALAState,
+  pstate::ParameterState{Continuous, Multivariate},
+  i::Integer,
+  tot::Integer,
+  a::Real=10.,
+  b::Real=0.
+) =
+  sstate.presentupdatetensor = rand(Bernoulli(exp_decay(i, tot, a, b)))
+
+rand_lin_decay_update!(
+  sstate::MuvMAMALAState,
+  pstate::ParameterState{Continuous, Multivariate},
+  i::Integer,
+  tot::Integer,
+  a::Real=1e-2,
+  b::Real=0.
+) =
+  sstate.presentupdatetensor = rand(Bernoulli(lin_decay(i, tot, a, b)))
+
+rand_pow_decay_update!(
+  sstate::MuvMAMALAState,
+  pstate::ParameterState{Continuous, Multivariate},
+  i::Integer,
+  tot::Integer,
+  a::Real=1e-3,
+  b::Real=0.
+) =
+  sstate.presentupdatetensor = rand(Bernoulli(pow_decay(i, tot, a, b)))
+
+rand_quad_decay_update!(
+  sstate::MuvMAMALAState,
+  pstate::ParameterState{Continuous, Multivariate},
+  i::Integer,
+  tot::Integer,
+  a::Real=1e-5,
+  b::Real=0.
+) =
+  sstate.presentupdatetensor = rand(Bernoulli(quad_decay(i, tot, a, b)))
+
+rand_update!(
+  sstate::MuvMAMALAState,
+  pstate::ParameterState{Continuous, Multivariate},
+  i::Integer,
+  tot::Integer,
+  p::Real=0.5
+) =
+  sstate.presentupdatetensor = rand(Bernoulli(p))
+
+smmala_only_update!(sstate::MuvMAMALAState, pstate::ParameterState{Continuous, Multivariate}, i::Integer, tot::Integer) =
+  sstate.presentupdatetensor = true
+
+### MAMALA show methods
+
+Base.show(io::IO, sampler::MAMALA) = print(io, "MAMALA sampler: drift step = $(sampler.driftstep)")
+
+Base.show(io::IO, ::MIME"text/plain", sampler::MAMALA) = show(io, sampler)

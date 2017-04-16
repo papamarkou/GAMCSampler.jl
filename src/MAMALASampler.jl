@@ -1,4 +1,4 @@
-module MAMALA
+module MAMALASampler
 
 using Distributions
 using Klara
@@ -11,7 +11,6 @@ import Base:
 import Klara:
   RealLowerTriangular,
   codegen,
-  ess,
   format_iteration,
   format_percentage,
   generate_empty,
@@ -23,27 +22,15 @@ import Klara:
   variate_form
 
 export
-  GUM,
-  MuvALSMMALAState,
-  MuvAMSMMALAState,
-  MuvGUMState,
-  MuvPSMMALAState,
-  ALSMMALA,
-  AMSMMALA,
-  ALSMMALAState,
-  AMSMMALAState,
-  PSMMALA,
-  PSMMALAMCTune,
-  PSMMALAMCTuner,
-  PSMMALAState,
+  MAMALA,
+  MAMALAMCTune,
+  MAMALAMCTuner,
+  MAMALAState,
+  MuvMAMALAState,
+  am_only_update!,
   cos_update!,
-  ess,
   exp_decay,
-  in_mahalanobis_contour,
   lin_decay,
-  mahalanobis_distance,
-  mahalanobis_update!,
-  mala_only_update!,
   mod_update!,
   pow_decay,
   quad_decay,
@@ -55,15 +42,8 @@ export
   smmala_only_update!
 
 include("stats/schedule.jl")
-
-include("tuners/PSMMALAMCTuner.jl")
-
-include("samplers/samplers.jl")
-
-include("samplers/ALSMMALA.jl")
-include("samplers/AMSMMALA.jl")
-
-include("samplers/iterate/ALSMMALA.jl")
-include("samplers/iterate/AMSMMALA.jl")
+include("tuners/MAMALAMCTuner.jl")
+include("samplers/MAMALA.jl")
+include("samplers/iterate/MAMALA.jl")
 
 end # module

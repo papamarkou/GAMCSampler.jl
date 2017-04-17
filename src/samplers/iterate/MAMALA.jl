@@ -22,14 +22,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     push!(body, :(_job.sstate.tune.totaltune.proposed += 1))
   end
 
-  push!(
-    body,
-    :(
-      if _job.sstate.count > _job.sampler.t0
-        _job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)
-      end
-    )
-  )
+  push!(body, :(
+    if _job.sstate.count > _job.sampler.t0
+      _job.sampler.update!(_job.sstate, _job.pstate, _job.sstate.count, _job.range.nsteps)
+    end
+  ))
 
   push!(smmalabody, :(_job.sstate.updatetensorcount += 1))
 
@@ -40,34 +37,34 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
   push!(smmalapasttensorbody, :(_job.parameter.uptotensorlogtarget!(_job.pstate)))
 
   if job.sampler.transform != nothing
-    push!(smmalapasttensorbody, :(_job.pstate.tensorlogtarget = _job.sampler.transform(_job.pstate.tensorlogtarget)))
+    push!(smmalapasttensorbody, :(_job.pstate.tensorlogtarget[:, :] = _job.sampler.transform(_job.pstate.tensorlogtarget)))
   end
 
-  push!(smmalapasttensorbody, :(_job.sstate.oldinvtensor = inv(_job.pstate.tensorlogtarget)))
+  push!(smmalapasttensorbody, :(_job.sstate.oldinvtensor[:, :] = inv(_job.pstate.tensorlogtarget)))
 
-  push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
+  push!(smmalapasttensorbody, :(_job.sstate.oldfirstterm[:] = _job.sstate.oldinvtensor*_job.pstate.gradlogtarget))
 
-  push!(smmalapasttensorbody, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))))
+  push!(smmalapasttensorbody, :(_job.sstate.cholinvtensor[:, :] = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))))
 
   push!(smmalabody, Expr(:if, :(!_job.sstate.pastupdatetensor), Expr(:block, smmalapasttensorbody...)))
 
-  push!(smmalabody, :(_job.sstate.μ = _job.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.oldfirstterm))
+  push!(smmalabody, :(_job.sstate.μ[:] = _job.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.oldfirstterm))
 
   push!(
     smmalabody,
-    :(
-      _job.sstate.pstate.value =
-        _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
-    )
+    :(_job.sstate.pstate.value[:] = _job.sstate.μ+_job.sstate.sqrttunestep*_job.sstate.cholinvtensor*randn(_job.pstate.size))
   )
 
   push!(smmalabody, :(_job.parameter.uptotensorlogtarget!(_job.sstate.pstate)))
 
   if job.sampler.transform != nothing
-    push!(smmalabody, :(_job.sstate.pstate.tensorlogtarget = _job.sampler.transform(_job.sstate.pstate.tensorlogtarget)))
+    push!(
+      smmalabody,
+      :(_job.sstate.pstate.tensorlogtarget[:, :] = _job.sampler.transform(_job.sstate.pstate.tensorlogtarget))
+    )
   end
 
-  push!(smmalabody, :(_job.sstate.newinvtensor = inv(_job.sstate.pstate.tensorlogtarget)))
+  push!(smmalabody, :(_job.sstate.newinvtensor[:, :] = inv(_job.sstate.pstate.tensorlogtarget)))
 
   push!(smmalabody, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
 
@@ -86,11 +83,11 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     )
   )
 
-  push!(smmalabody, :(_job.sstate.newfirstterm = _job.sstate.newinvtensor*_job.sstate.pstate.gradlogtarget))
+  push!(smmalabody, :(_job.sstate.newfirstterm[:] = _job.sstate.newinvtensor*_job.sstate.pstate.gradlogtarget))
 
   push!(
     smmalabody,
-    :(_job.sstate.μ = _job.sstate.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.newfirstterm)
+    :(_job.sstate.μ[:] = _job.sstate.pstate.value+0.5*_job.sstate.tune.totaltune.step*_job.sstate.newfirstterm)
   )
 
   push!(smmalabody, :(
@@ -133,7 +130,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
 
   push!(update, :(_job.sstate.oldinvtensor = copy(_job.sstate.newinvtensor)))
 
-  push!(update, :(_job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.newinvtensor)))))
+  push!(update, :(_job.sstate.cholinvtensor[:, :] = ctranspose(chol(Hermitian(_job.sstate.newinvtensor)))))
 
   push!(update, :(_job.sstate.oldfirstterm = copy(_job.sstate.newfirstterm)))
 
@@ -177,37 +174,30 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
   push!(
     ambody,
     :(
-      if _job.sstate.pastupdatetensor
-        # Once fully migrated to Julia 0.5 or higher, use LinAlg.lowrankupdate instead of chol in order to reduce complexity
-        _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.oldinvtensor)))
-        # _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(5.112120999999998*_job.sstate.oldinvtensor/11+2.500000000000001e-5/11)))
-      else
-        covariance!(
-          _job.sstate.newinvtensor,
-          _job.sstate.oldinvtensor,
-          _job.sstate.count-2,
-          _job.pstate.value,
-          _job.sstate.lastmean,
-          _job.sstate.secondlastmean
-        )
-
-        _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(_job.sstate.newinvtensor)))
-        # _job.sstate.cholinvtensor = ctranspose(chol(Hermitian(5.112120999999998*_job.sstate.newinvtensor/11+2.500000000000001e-5/11)))
-      end
+      covariance!(
+        _job.sstate.oldinvtensor,
+        _job.sstate.oldinvtensor,
+        _job.sstate.count-2,
+        _job.pstate.value,
+        _job.sstate.lastmean,
+        _job.sstate.secondlastmean
+      )
     )
   )
 
-  push!(
-    ambody,
-    :(
-      _job.sstate.pstate.value =
-        _job.pstate.value+_job.sstate.sqrttunestep*_job.sstate.cholinvtensor*randn(_job.pstate.size)
-    )
-  )
+  push!(body, :(setproposal!(_job.sstate, _job.sampler, _job.sstate.oldinvtensor, _job.pstate)))
 
-  push!(ambody, :(_job.parameter.logtarget!(_job.sstate.pstate)))
+  push!(body, :(_job.sstate.pstate.value[:] =  rand(_job.sstate.proposal)))
 
-  push!(ambody, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
+  push!(body, :(_job.parameter.logtarget!(_job.sstate.pstate)))
+
+  push!(body, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
+
+  push!(body, :(_job.sstate.ratio -= logpdf(_job.sstate.proposal, _job.sstate.pstate.value)))
+
+  push!(body, :(setproposal!(_job.sstate, _job.sampler, _job.sstate.oldinvtensor, _job.sstate.pstate)))
+
+  push!(body, :(_job.sstate.ratio += logpdf(_job.sstate.proposal, _job.pstate.value)))
 
   update = []
   noupdate = []
@@ -223,8 +213,6 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
   if in(:logprior, job.outopts[:monitor]) && job.parameter.logprior! != nothing
     push!(update, :(_job.pstate.logprior = _job.sstate.pstate.logprior))
   end
-
-  push!(update, :(_job.sstate.oldinvtensor = copy(_job.sstate.newinvtensor)))
 
   if in(:accept, job.outopts[:diagnostics])
     push!(update, :(_job.pstate.diagnosticvalues[1] = true))

@@ -183,7 +183,7 @@ end
 set_gmm(
   sampler::MAMALA,
   pstate::ParameterState{Continuous, Multivariate},
-  C::RealMatrix
+  C::RealMatrix,
   corescale::Real,
   sqrtminorscale::Real,
   w::RealVector
@@ -191,11 +191,13 @@ set_gmm(
   MixtureModel([MvNormal(pstate.value, corescale*C), MvNormal(pstate.value, sqrtminorscale)], w)
 
 set_gmm!(
-  sstate::MuvAMState,
+  sstate::MuvMAMALAState,
   sampler::MAMALA,
   pstate::ParameterState{Continuous, Multivariate}
 ) =
-  sstate.proposal = set_gmm(sampler, pstate, sstate.C, sstate.tune.totaltune.step, sstate.sqrtminorscale, sstate.w)
+  sstate.proposal = set_gmm(
+    sampler, pstate, sstate.oldinvtensor, sstate.tune.totaltune.step, sstate.sqrtminorscale, sstate.w
+  )
 
 tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =
   MAMALAMCTune(

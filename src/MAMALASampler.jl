@@ -15,6 +15,8 @@ import Klara:
   recursive_mean!,
   reset!,
   sampler_state,
+  set_gmm,
+  set_gmm!,
   tune!,
   tuner_state,
   variate_form

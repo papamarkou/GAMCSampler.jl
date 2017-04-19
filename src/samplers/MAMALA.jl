@@ -5,7 +5,7 @@ abstract MAMALAState <: LMCSamplerState
 ## MuvMAMALAState holds the internal state ("local variables") of the MAMALA sampler for multivariate parameters
 
 type MuvMAMALAState <: MAMALAState
-  proposal::MultivariateGMM
+  proposal::Union{MultivariateGMM, AbstractMvNormal, Void}
   pstate::ParameterState{Continuous, Multivariate}
   tune::MCTunerState
   sqrttunestep::Real
@@ -18,14 +18,15 @@ type MuvMAMALAState <: MAMALAState
   cholinvtensor::RealLowerTriangular
   newfirstterm::RealVector
   oldfirstterm::RealVector
+  sqrtminorscale::Real
+  w::RealVector
   presentupdatetensor::Bool
   pastupdatetensor::Bool
-  w::RealVector
   count::Integer
   updatetensorcount::Integer
 
   function MuvMAMALAState(
-    proposal::MultivariateGMM,
+    proposal::Union{MultivariateGMM, AbstractMvNormal, Void},
     pstate::ParameterState{Continuous, Multivariate},
     tune::MCTunerState,
     sqrttunestep::Real,
@@ -38,15 +39,20 @@ type MuvMAMALAState <: MAMALAState
     cholinvtensor::RealLowerTriangular,
     newfirstterm::RealVector,
     oldfirstterm::RealVector,
+    sqrtminorscale::Real,
+    w::RealVector,
     presentupdatetensor::Bool,
     pastupdatetensor::Bool,
-    w::RealVector,
     count::Integer,
     updatetensorcount::Integer
   )
     if !isnan(ratio)
       @assert 0 < ratio < 1 "Acceptance ratio should be between 0 and 1"
       @assert sqrttunestep > 0 "Square root of tuned drift step is not positive"
+    end
+
+    if !isnan(sqrtminorscale)
+      @assert sqrtminorscale >= 0 "Scaling of stabilizing covariance should be non-negative"
     end
 
     if !isnan(w[1])
@@ -72,9 +78,10 @@ type MuvMAMALAState <: MAMALAState
       cholinvtensor,
       newfirstterm,
       oldfirstterm,
+      sqrtminorscale,
+      w,
       presentupdatetensor,
       pastupdatetensor,
-      w,
       count,
       updatetensorcount
     )
@@ -82,13 +89,14 @@ type MuvMAMALAState <: MAMALAState
 end
 
 MuvMAMALAState(
-  proposal::MultivariateGMM,
   pstate::ParameterState{Continuous, Multivariate},
+  sqrtminorscale::Real,
   w::RealVector,
-  tune::MCTunerState=MAMALAMCTune()
+  tune::MCTunerState=MAMALAMCTune(),
+  lastmean::RealVector=Array(eltype(pstate), pstate.size)
 ) =
   MuvMAMALAState(
-  proposal,
+  nothing,
   pstate,
   tune,
   NaN,
@@ -101,9 +109,10 @@ MuvMAMALAState(
   RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
   Array(eltype(pstate), pstate.size),
   Array(eltype(pstate), pstate.size),
-  false,
-  false,
+  sqrtminorscale,
   w,
+  true,
+  false,
   0,
   0
 )
@@ -114,7 +123,6 @@ immutable MAMALA <: LMCSampler
   update!::Function
   transform::Union{Function, Void}
   driftstep::Real
-  corescale::Real # Scaling factor of covariance matrix of the core mixture component
   minorscale::Real # Scaling factor of covariance matrix of the stabilizing mixture component
   c::Real # Non-negative constant with relative small value that determines the mixture weight of the stabilizing component
   t0::Integer
@@ -123,17 +131,15 @@ immutable MAMALA <: LMCSampler
     update!::Function,
     transform::Union{Function, Void},
     driftstep::Real,
-    corescale::Real,
     minorscale::Real,
     c::Real,
     t0::Integer
   )
     @assert driftstep > 0 "Drift step is not positive"
-    @assert 0 < corescale "Constant corescale must be positive, got $corescale"
     @assert 0 < minorscale "Constant minorscale must be positive, got $minorscale"
     @assert 0 <= c "Constant c must be non-negative"
     @assert t0 > 0 "t0 is not positive"
-    new(update!, transform, driftstep, corescale, minorscale, c, t0)
+    new(update!, transform, driftstep, minorscale, c, t0)
   end
 end
 
@@ -141,12 +147,11 @@ MAMALA(;
   update::Function=rand_update!,
   transform::Union{Function, Void}=nothing,
   driftstep::Real=1.,
-  corescale::Real=1.,
   minorscale::Real=1.,
   c::Real=0.05,
   t0::Integer=3
 ) =
-  MAMALA(update, transform, driftstep, corescale, minorscale, c, t0)
+  MAMALA(update, transform, driftstep, minorscale, c, t0)
 
 ### Initialize MAMALA sampler
 
@@ -175,11 +180,22 @@ end
 
 ## Initialize MAMALA state
 
-setproposal(sampler::MAMALA, pstate::ParameterState{Continuous, Multivariate}, C::RealMatrix, w::RealVector) =
-  MixtureModel([MvNormal(pstate.value, sampler.corescale*C), MvNormal(pstate.value, sampler.minorscale*eye(pstate.size))], w)
+set_gmm(
+  sampler::MAMALA,
+  pstate::ParameterState{Continuous, Multivariate},
+  C::RealMatrix
+  corescale::Real,
+  sqrtminorscale::Real,
+  w::RealVector
+) =
+  MixtureModel([MvNormal(pstate.value, corescale*C), MvNormal(pstate.value, sqrtminorscale)], w)
 
-setproposal!(sstate::MuvMAMALAState, sampler::MAMALA, pstate::ParameterState{Continuous, Multivariate}) =
-  sstate.proposal = setproposal(sampler, pstate, sstate.oldinvtensor, sstate.w)
+set_gmm!(
+  sstate::MuvAMState,
+  sampler::MAMALA,
+  pstate::ParameterState{Continuous, Multivariate}
+) =
+  sstate.proposal = set_gmm(sampler, pstate, sstate.C, sstate.tune.totaltune.step, sstate.sqrtminorscale, sstate.w)
 
 tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =
   MAMALAMCTune(
@@ -187,13 +203,6 @@ tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =
     BasicMCTune(NaN, 0, 0, tuner.amtuner.period),
     BasicMCTune(sampler.driftstep, 0, 0, tuner.totaltuner.period)
   )
-
-MuvMAMALAState(
-  proposal::MultivariateGMM,
-  pstate::ParameterState{Continuous, Multivariate},
-  w::RealVector,
-  tune::MCTunerState=MAMALAMCTune()
-)
 
 function sampler_state(
   parameter::Parameter{Continuous, Multivariate},
@@ -206,20 +215,18 @@ function sampler_state(
   w = [1-sampler.c, sampler.c]
 
   sstate = MuvMAMALAState(
-    setproposal(sampler, pstate, oldinvtensor, w),
     generate_empty(pstate, parameter.diffmethods, parameter.diffopts),
+    sqrt(sampler.minorscale),
     w,
-    tuner_state(sampler, tuner)
+    tuner_state(sampler, tuner),
+    copy(pstate.value)
   )
 
   sstate.sqrttunestep = sqrt(sampler.driftstep)
-  sstate.lastmean = copy(pstate.value)
-  sstate.oldinvtensor = inv(pstate.tensorlogtarget)
-  # sstate.cholinvtensor = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
-  # sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  # sstate.presentupdatetensor = true
-  sstate.pastupdatetensor = false
-  
+  sstate.oldinvtensor[:, :] = inv(pstate.tensorlogtarget)
+  sstate.cholinvtensor[:, :] = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
+  sstate.oldfirstterm[:] = sstate.oldinvtensor*pstate.gradlogtarget
+
   sstate
 end
 
@@ -250,11 +257,9 @@ function reset!(
   reset!(sstate.tune, sampler, tuner)
   sstate.sqrttunestep = sqrt(sampler.driftstep)
   sstate.lastmean = copy(pstate.value)
-  sstate.oldinvtensor = inv(pstate.tensorlogtarget)
-  # sstate.cholinvtensor = chol(sstate.oldinvtensor, Val{:L})
-  # sstate.oldfirstterm = sstate.oldinvtensor*pstate.gradlogtarget
-  # sstate.presentupdatetensor = true
+  sstate.presentupdatetensor = true
   sstate.pastupdatetensor = false
+  sstate.count = 0
 end
 
 ### MAMALA schedules
@@ -336,6 +341,14 @@ smmala_only_update!(sstate::MuvMAMALAState, pstate::ParameterState{Continuous, M
 
 ### MAMALA show methods
 
-Base.show(io::IO, sampler::MAMALA) = print(io, "MAMALA sampler: drift step = $(sampler.driftstep)")
+Base.show(io::IO, sampler::MAMALA) = print(
+  io,
+  "MAMALA sampler: drift step = ",
+  sampler.driftstep,
+  ", scaling of stabilizing covariance = ",
+  sampler.minorscale,
+  ", weight of stabilizing mixture component = ",
+  sampler.c
+)
 
 Base.show(io::IO, ::MIME"text/plain", sampler::MAMALA) = show(io, sampler)

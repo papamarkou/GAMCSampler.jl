@@ -144,9 +144,10 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     push!(update, :(_job.pstate.logprior = _job.sstate.pstate.logprior))
   end
 
-  if in(:accept, job.outopts[:diagnostics])
-    push!(update, :(_job.pstate.diagnosticvalues[1] = true))
-    push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
+  dindex = findfirst(job.outopts[:diagnostics], :accept)
+  if dindex != 0
+    push!(update, :(_job.pstate.diagnosticvalues[$dindex] = true))
+    push!(noupdate, :(_job.pstate.diagnosticvalues[$dindex] = false))
   end
 
   if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
@@ -185,19 +186,21 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     )
   )
 
-  push!(body, :(setproposal!(_job.sstate, _job.sampler, _job.sstate.oldinvtensor, _job.pstate)))
+  push!(ambody, :(_job.sstate.oldinvtensor[:, :] = Hermitian(_job.sstate.oldinvtensor)))
 
-  push!(body, :(_job.sstate.pstate.value[:] =  rand(_job.sstate.proposal)))
+  push!(ambody, :(set_gmm!(_job.sstate, _job.sampler, _job.pstate)))
 
-  push!(body, :(_job.parameter.logtarget!(_job.sstate.pstate)))
+  push!(ambody, :(_job.sstate.pstate.value[:] =  rand(_job.sstate.proposal)))
 
-  push!(body, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
+  push!(ambody, :(_job.parameter.logtarget!(_job.sstate.pstate)))
 
-  push!(body, :(_job.sstate.ratio -= logpdf(_job.sstate.proposal, _job.sstate.pstate.value)))
+  push!(ambody, :(_job.sstate.ratio = _job.sstate.pstate.logtarget-_job.pstate.logtarget))
 
-  push!(body, :(setproposal!(_job.sstate, _job.sampler, _job.sstate.oldinvtensor, _job.sstate.pstate)))
+  push!(ambody, :(_job.sstate.ratio -= logpdf(_job.sstate.proposal, _job.sstate.pstate.value)))
 
-  push!(body, :(_job.sstate.ratio += logpdf(_job.sstate.proposal, _job.pstate.value)))
+  push!(ambody, :(set_gmm!(_job.sstate, _job.sampler, _job.sstate.pstate)))
+
+  push!(ambody, :(_job.sstate.ratio += logpdf(_job.sstate.proposal, _job.pstate.value)))
 
   update = []
   noupdate = []
@@ -214,9 +217,10 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
     push!(update, :(_job.pstate.logprior = _job.sstate.pstate.logprior))
   end
 
-  if in(:accept, job.outopts[:diagnostics])
-    push!(update, :(_job.pstate.diagnosticvalues[1] = true))
-    push!(noupdate, :(_job.pstate.diagnosticvalues[1] = false))
+  dindex = findfirst(job.outopts[:diagnostics], :accept)
+  if dindex != 0
+    push!(update, :(_job.pstate.diagnosticvalues[$dindex] = true))
+    push!(noupdate, :(_job.pstate.diagnosticvalues[$dindex] = false))
   end
 
   if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)

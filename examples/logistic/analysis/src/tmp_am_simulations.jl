@@ -38,25 +38,15 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = MAMALA(
-  update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
-  driftstep=0.02,
-  c=0.05
-)
+sampler = AM(0.02, 4)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
-
-mctuner = MAMALAMCTuner(
-  VanillaMCTuner(verbose=false),
-  VanillaMCTuner(verbose=false),
-  AcceptanceRateMCTuner(0.27, verbose=false)
-)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
 v0 = Dict(:λ=>100., :X=>covariates, :y=>outcome, :p=>rand(Normal(0, 3), npars))
 
-job = BasicMCJob(model, sampler, mcrange, v0, tuner=mctuner, outopts=outopts)
+job = BasicMCJob(model, sampler, mcrange, v0, tuner=VanillaMCTuner(verbose=false), outopts=outopts)
 
 tic()
 run(job)
@@ -69,7 +59,3 @@ acceptance(chain)
 mean(chain)
 
 ess(chain)
-
-job.sstate.tune.totaltune.step
-
-job.sstate.updatetensorcount

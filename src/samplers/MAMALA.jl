@@ -196,7 +196,7 @@ set_gmm!(
   pstate::ParameterState{Continuous, Multivariate}
 ) =
   sstate.proposal = set_gmm(
-    sampler, pstate, sstate.oldinvtensor, sstate.tune.totaltune.step, sstate.sqrtminorscale, sstate.w
+    sampler, pstate, sstate.oldinvtensor, sstate.tune.totaltune.step, sstate.sqrttunestep, sstate.w
   )
 
 tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =

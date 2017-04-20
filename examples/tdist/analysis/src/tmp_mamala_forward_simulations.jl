@@ -38,7 +38,7 @@ sampler = MAMALA(
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
   transform=H -> softabs(H, 1000.),
   driftstep=0.25,
-  c=0.05
+  c=0.001
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
@@ -73,6 +73,9 @@ i = 1
 
   chain = output(job)
   ratio = acceptance(chain)
+
+  mean(chain)
+  ess(chain)
 
   if 0.15 < ratio < 0.35
     # writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')

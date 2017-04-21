@@ -1,12 +1,8 @@
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
-examples/logistic/data
-examples/logistic/analysis/output
-examples/poisson/data/mala
-examples/poisson/data/alsmmala
-examples/poisson/data/amsmmala
-examples/poisson/data/smmala
-examples/poisson/analysis/output
-examples/tdist/data
-examples/tdist/analysis/output
+examples/logistic_regression/output
+examples/poisson_regression/data
+examples/poisson_regression/output
+examples/radial_velocity/data
+examples/radial_velocity/output

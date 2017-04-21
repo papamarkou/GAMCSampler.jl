@@ -8,7 +8,7 @@ OUTDIR = joinpath(PARENTDIR, "output")
 
 # OUTDIR = "../../output"
 
-SUBOUTDIR = "MALA"
+SUBOUTDIR = "AM"
 
 nchains = 10
 nmcmc = 110000
@@ -41,7 +41,7 @@ p = BasicContMuvParameter(
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
-sampler = MALA(0.02)
+sampler = AM(0.02, 4, minorscale=0.001, c=0.01)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
@@ -59,7 +59,6 @@ while i <= nchains
     sampler,
     mcrange,
     v0,
-    tuner=AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), verbose=false),
     outopts=outopts
   )
 
@@ -70,7 +69,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.5 < ratio < 0.65
+  if 0.23 < ratio < 0.37
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

@@ -10,7 +10,7 @@ OUTDIR = joinpath(PARENTDIR, "output")
 
 SUBOUTDIR = "MAMALA"
 
-nchains = 1
+nchains = 10
 nmcmc = 110000
 nburnin = 10000
 
@@ -48,8 +48,10 @@ p = BasicContMuvParameter(
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
 sampler = MAMALA(
-  update=(sstate, pstate, i, tot) -> mod_update!(sstate, pstate, i, tot, 7),
-  driftstep=0.02
+  update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
+  driftstep=0.02,
+  minorscale=0.001,
+  c=0.01
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
@@ -57,7 +59,7 @@ mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 mctuner = MAMALAMCTuner(
   VanillaMCTuner(verbose=false),
   VanillaMCTuner(verbose=false),
-  AcceptanceRateMCTuner(0.27, verbose=false)
+  AcceptanceRateMCTuner(0.35, verbose=false)
 )
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
@@ -86,7 +88,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.225 < ratio < 0.275
+  if 0.24 < ratio < 0.36
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

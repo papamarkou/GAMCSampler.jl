@@ -6,7 +6,7 @@ OUTDIR = joinpath(PARENTDIR, "output")
 
 # OUTDIR = "../../output"
 
-SUBOUTDIR = "SMMALA"
+SUBOUTDIR = "AM"
 
 npars = 4
 

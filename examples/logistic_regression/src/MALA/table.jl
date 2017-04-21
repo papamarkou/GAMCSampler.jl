@@ -10,7 +10,7 @@ SUBOUTDIR = "MALA"
 
 npars = 4
 
-nchains = 1
+nchains = 10
 nmcmc = 110000
 nburnin = 10000
 
@@ -31,7 +31,7 @@ results[:time] = mean(readdlm(joinpath(OUTDIR, SUBOUTDIR, "times.csv"), ',', Flo
 results[:efficiency] = minimum(results[:ess])/results[:time]
 
 writedlm(
-  joinpath(OUTDIR, "logit_mala_summary.csv"),
+  joinpath(OUTDIR, SUBOUTDIR, "summary.csv"),
   hcat(
     results[:rate],
     results[:ess],
@@ -42,7 +42,7 @@ writedlm(
 )
 
 writedlm(
-  joinpath(OUTDIR, SUBOUTDIR, "logit_mala_summary.txt"),
+  joinpath(OUTDIR, SUBOUTDIR, "summary.txt"),
   Any[
     round(results[:rate], 2)
     [Int64(i) for i in round(results[:ess])]...

@@ -1,9 +1,14 @@
 using Distributions
 using Klara
-using PGUManifoldMC
+using MAMALASampler
 
-DATADIR = "../../data"
-SUBDATADIR = "smmala"
+CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
+PARENTDIR = join(split(CURRENTDIR, '/')[1:end-2], '/')
+OUTDIR = joinpath(PARENTDIR, "output")
+
+# OUTDIR = "../../output"
+
+SUBOUTDIR = "SMMALA"
 
 nchains = 10
 nmcmc = 110000
@@ -72,8 +77,8 @@ while i <= nchains
   ratio = acceptance(chain)
 
   if 0.65 < ratio < 0.75
-    writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
-    writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
+    writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
+    writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
     times[i] = runtime
     stepsizes[i] = job.sstate.tune.step
@@ -83,5 +88,5 @@ while i <= nchains
   end
 end
 
-writedlm(joinpath(DATADIR, SUBDATADIR, "times.csv"), times, ',')
-writedlm(joinpath(DATADIR, SUBDATADIR, "stepsizes.csv"), stepsizes, ',')
+writedlm(joinpath(OUTDIR, SUBOUTDIR, "times.csv"), times, ',')
+writedlm(joinpath(OUTDIR, SUBOUTDIR, "stepsizes.csv"), stepsizes, ',')

@@ -31,13 +31,7 @@ plogprior(p::Vector{Float64}, v::Vector) = -0.5*(dot(p, p)/v[1]+npars*log(2*pi*v
 
 pgradlogtarget(p::Vector{Float64}, v::Vector) = v[2]'*(v[3]-1./(1+exp(-v[2]*p)))-p/v[1]
 
-p = BasicContMuvParameter(
-  :p,
-  loglikelihood=ploglikelihood,
-  logprior=plogprior,
-  gradlogtarget=pgradlogtarget,
-  nkeys=4
-)
+p = BasicContMuvParameter(:p, loglikelihood=ploglikelihood, logprior=plogprior, gradlogtarget=pgradlogtarget, nkeys=4)
 
 model = likelihood_model([Hyperparameter(:λ), Data(:X), Data(:y), p], isindexed=false)
 
@@ -54,13 +48,7 @@ i = 1
 while i <= nchains
   v0 = Dict(:λ=>100., :X=>covariates, :y=>outcome, :p=>rand(Normal(0, 3), npars))
 
-  job = BasicMCJob(
-    model,
-    sampler,
-    mcrange,
-    v0,
-    outopts=outopts
-  )
+  job = BasicMCJob(model, sampler, mcrange, v0, outopts=outopts)
 
   tic()
   run(job)

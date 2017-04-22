@@ -51,6 +51,8 @@ sampler = SMMALA(0.02)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
+mctuner = AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verbose=false)
+
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
 times = Array(Float64, nchains)
@@ -60,14 +62,7 @@ i = 1
 while i <= nchains
   v0 = Dict(:λ=>100., :X=>covariates, :y=>outcome, :p=>rand(Normal(0, 3), npars))
 
-  job = BasicMCJob(
-    model,
-    sampler,
-    mcrange,
-    v0,
-    tuner=AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verbose=false),
-    outopts=outopts
-  )
+  job = BasicMCJob(model, sampler, mcrange, v0, tuner=mctuner, outopts=outopts)
 
   tic()
   run(job)

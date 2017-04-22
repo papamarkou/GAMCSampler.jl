@@ -2,18 +2,16 @@ library(data.table)
 library(stringr)
 
 DATADIR <- "../../data"
-SUBDATADIR <- "smmala"
+SUBDATADIR <- "mala"
 OUTDIR <- "../output"
-
-npars <- 4
 
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
-ci <- 5
-pi <- 2
+ci <- 3
+pi <- 7
 
 chains <- t(fread(
   file.path(DATADIR, SUBDATADIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
@@ -21,13 +19,13 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, "logit_smmala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "tdist_mala_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,
   chains[, pi],
   type="l",
-  ylim=c(-1.2, 3),
+  ylim=c(-4.5, 4.5),
   col="steelblue2",
   xlab="",
   ylab="",
@@ -38,8 +36,8 @@ plot(
 
 axis(
   2,
-  at=seq(-1, 3, by=1),
-  labels=seq(-1, 3, by=1),
+  at=seq(-4, 4, by=4),
+  labels=seq(-4, 4, by=4),
   cex.axis=1.8,
   las=1
 )

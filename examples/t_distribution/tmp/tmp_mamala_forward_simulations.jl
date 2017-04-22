@@ -77,7 +77,7 @@ i = 1
   mean(chain)
   ess(chain)
 
-  if 0.15 < ratio < 0.35
+  if 0.05 < ratio < 0.95
     # writedlm(joinpath(DATADIR, SUBDATADIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     #writedlm(joinpath(DATADIR, SUBDATADIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

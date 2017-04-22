@@ -72,14 +72,7 @@ i = 1
 while i <= nchains
   v0 = Dict(:λ=>100., :X=>covariates, :y=>outcome, :p=>rand(Normal(0, 3), npars))
 
-  job = BasicMCJob(
-    model,
-    sampler,
-    mcrange,
-    v0,
-    tuner=mctuner,
-    outopts=outopts
-  )
+  job = BasicMCJob(model, sampler, mcrange, v0, tuner=mctuner, outopts=outopts)
 
   tic()
   run(job)

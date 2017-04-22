@@ -1,14 +1,12 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("AM", "MALA", "SMMALA", "MAMALA")
+SAMPLERDIRS <- c("mala", "smmala_reverse", "amsmmala", "alsmmala")
 
 DATADIR <- "../../data"
 OUTDIR <- "../output"
 
 nsamplerdirs <- length(SAMPLERDIRS)
-
-npars <- 4
 
 nchains <- 10
 nmcmc <- 110000
@@ -16,8 +14,8 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 50000
-ci <- 5
-pi <- 2
+ci <- 3
+pi <- 7
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
 
@@ -33,13 +31,13 @@ for (j in 1:nsamplerdirs) {
 
 cols <- c("green", "blue", "red", "orange")
 
-pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "tdist_meanplot.pdf"), width=10, height=6)
 
 plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(0.5, 1),
+  ylim=c(-1., 1.5),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -51,8 +49,8 @@ plot(
 
 axis(
   2,
-  at=seq(0.5, 1, by=0.1),
-  labels=seq(0.5, 1, by=0.1),
+  at=c(-1, -0.5, 0, 0.5, 1, 1.5),
+  labels=c(-1, -0.5, 0, 0.5, 1, 1.5),
   cex.axis=1.8,
   las=1
 )
@@ -82,14 +80,14 @@ lines(
 )
 
 legend(
-  35000, 1,
+  35000, 1.5,
   c("MALA", "SMMALA", "AMSMMALA", "ALSMMALA"),
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,
   cex=1.5,
   bty="n",
-  text.width=2000
+  text.width=4000
 )
 
 dev.off()

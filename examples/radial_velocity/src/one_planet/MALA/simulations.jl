@@ -1,15 +1,25 @@
 using Distributions
 using Klara
-using PGUManifoldMC
+using MAMALASampler
 
-include("rv_model.jl")
+CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
+ROOTDIR = splitdir(splitdir(splitdir(CURRENTDIR)[1])[1])[1]
+SRCDIR = joinpath(ROOTDIR, "src")
+DATADIR = joinpath(ROOTDIR, "data")
+OUTDIR = joinpath(ROOTDIR, "output")
+
+# SRCDIR = "../../../src"
+# DATADIR = "../../../data"
+# OUTDIR = "../../../output"
+
+SUBOUTDIR = "MALA"
+
+include(joinpath(SRCDIR, "rv_model.jl"))
+include(joinpath(SRCDIR, "utils_ex.jl"))
 
 using RvModelKeplerian
 
-DATADIR = "../../data"
-SUBDATADIR = "mala"
-
-dataset = readdlm(joinpath(DATADIR, "example1.csv"), ',', header=false); # read observational data
+dataset = readdlm(joinpath(DATADIR, "one_planet.csv"), ',', header=false); # read observational data
 obs_times = dataset[:,1]
 obs_rv = dataset[:,2]
 sigma_obs = dataset[:,3]
@@ -17,7 +27,6 @@ set_times(obs_times);     # set data to use for model evaluation
 set_obs( obs_rv);
 set_sigma_obs(sigma_obs);
 
-include("utils_ex.jl")
 param_true = make_param_true_ex1()
 param_perturb_scale = make_param_perturb_scale(param_true)
 param_init = 0

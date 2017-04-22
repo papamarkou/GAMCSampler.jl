@@ -7,8 +7,8 @@ OUTDIR = "../../output"
 SUBOUTDIR = "SMMALA"
 
 nchains = 1
-nmcmc = 110000
-nburnin = 10000
+nmcmc = 220000
+nburnin = 20000
 
 function C(n::Int, c::Float64)
   X = eye(n)

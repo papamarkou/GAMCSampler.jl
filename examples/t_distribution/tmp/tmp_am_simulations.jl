@@ -7,8 +7,8 @@ OUTDIR = "../../output"
 SUBOUTDIR = "AM"
 
 nchains = 1
-nmcmc = 110000
-nburnin = 10000
+nmcmc = 220000
+nburnin = 20000
 
 function C(n::Int, c::Float64)
   X = eye(n)
@@ -30,7 +30,8 @@ p = BasicContMuvParameter(:p, logtarget=plogtarget, nkeys=1)
 
 model = likelihood_model([p], isindexed=false)
 
-sampler = AM(0.25, n, minorscale=1., c=0.001)
+# sampler = AM(0.02, n, minorscale=0.001, c=0.01)
+sampler = AM(0.02, n, minorscale=0.001, c=0.05)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 

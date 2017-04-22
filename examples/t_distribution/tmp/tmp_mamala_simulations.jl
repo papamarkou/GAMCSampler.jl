@@ -7,8 +7,8 @@ OUTDIR = "../../output"
 SUBOUTDIR = "MAMALA"
 
 nchains = 1
-nmcmc = 110000
-nburnin = 10000
+nmcmc = 220000
+nburnin = 20000
 
 function C(n::Int, c::Float64)
   X = eye(n)
@@ -34,7 +34,8 @@ sampler = MAMALA(
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
   transform=H -> softabs(H, 1000.),
   driftstep=0.25,
-  c=0.001
+  minorscale=0.001,
+  c=0.05
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)

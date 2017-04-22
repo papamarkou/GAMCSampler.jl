@@ -7,8 +7,8 @@ OUTDIR = "../../output"
 SUBOUTDIR = "MALA"
 
 nchains = 1
-nmcmc = 110000
-nburnin = 10000
+nmcmc = 220000
+nburnin = 20000
 
 function C(n::Int, c::Float64)
   X = eye(n)
@@ -65,7 +65,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.5 < ratio < 0.65
+  if 0.05 < ratio < 0.95
     times[i] = runtime
     stepsizes[i] = job.sstate.tune.step
 

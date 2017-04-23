@@ -11,8 +11,8 @@ OUTDIR = joinpath(ROOTDIR, "output")
 SUBOUTDIR = "MAMALA"
 
 nchains = 1
-nmcmc = 110000
-nburnin = 10000
+nmcmc = 11000
+nburnin = 1000
 
 function C(n::Int, c::Float64)
   X = eye(n)
@@ -38,7 +38,8 @@ sampler = MAMALA(
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
   transform=H -> softabs(H, 1000.),
   driftstep=0.25,
-  c=0.001
+  minorscale=0.001,
+  c=0.01
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
@@ -68,7 +69,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.24 < ratio < 0.36
+  if 0.22 < ratio < 0.37
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

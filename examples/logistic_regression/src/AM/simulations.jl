@@ -1,6 +1,5 @@
 using Distributions
 using Klara
-using MAMALASampler
 
 CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]

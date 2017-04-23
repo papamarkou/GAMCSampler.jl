@@ -12,7 +12,7 @@ OUTDIR = joinpath(ROOTDIR, "output", "one_planet")
 # DATADIR = "../../../data"
 # OUTDIR = "../../../output/one_planet"
 
-SUBOUTDIR = "MALA"
+SUBOUTDIR = "SMMALA"
 
 include(joinpath(SRCDIR, "rv_model.jl"))
 include(joinpath(SRCDIR, "utils_ex.jl"))
@@ -34,15 +34,15 @@ set_sigma_obs(sigma_obs);
 param_true = make_param_true_ex1()
 param_perturb_scale = make_param_perturb_scale(param_true)
 
-p = BasicContMuvParameter(:p, logtarget=plogtarget, diffopts=DiffOptions(mode=:forward))
+p = BasicContMuvParameter(:p, logtarget=plogtarget, diffopts=DiffOptions(mode=:forward, order=2))
 
 model = likelihood_model(p, false)
 
-sampler = MALA(0.02)
+sampler = SMMALA(0.02, H -> softabs(H, 1000.))
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
-mctuner = AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), verbose=false)
+mctuner = AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verbose=false)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
@@ -63,7 +63,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.5 < ratio < 0.65
+  if 0.01 < ratio < 0.95
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

@@ -12,7 +12,7 @@ OUTDIR = joinpath(ROOTDIR, "output", "one_planet")
 # DATADIR = "../../../data"
 # OUTDIR = "../../../output/one_planet"
 
-SUBOUTDIR = "MALA"
+SUBOUTDIR = "MAMALA"
 
 include(joinpath(SRCDIR, "rv_model.jl"))
 include(joinpath(SRCDIR, "utils_ex.jl"))
@@ -34,20 +34,30 @@ set_sigma_obs(sigma_obs);
 param_true = make_param_true_ex1()
 param_perturb_scale = make_param_perturb_scale(param_true)
 
-p = BasicContMuvParameter(:p, logtarget=plogtarget, diffopts=DiffOptions(mode=:forward))
+p = BasicContMuvParameter(:p, logtarget=plogtarget, diffopts=DiffOptions(mode=:forward, order=2))
 
 model = likelihood_model(p, false)
 
-sampler = MALA(0.02)
+sampler = MAMALA(
+  update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
+  transform=H -> softabs(H, 1000.),
+  driftstep=0.25,
+  c=0.001
+)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
-mctuner = AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), verbose=false)
+mctuner = MAMALAMCTuner(
+  VanillaMCTuner(verbose=false),
+  VanillaMCTuner(verbose=false),
+  AcceptanceRateMCTuner(0.35, verbose=false)
+)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
 times = Array(Float64, nchains)
 stepsizes = Array(Float64, nchains)
+nupdates = Array(Int64, nchains)
 i = 1
 
 while i <= nchains
@@ -63,12 +73,13 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.5 < ratio < 0.65
+  if 0.24 < ratio < 0.36
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
     times[i] = runtime
-    stepsizes[i] = job.sstate.tune.step
+    stepsizes[i] = job.sstate.tune.totaltune.step
+    nupdates[i] = job.sstate.updatetensorcount
 
     println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)
     i += 1
@@ -77,3 +88,4 @@ end
 
 writedlm(joinpath(OUTDIR, SUBOUTDIR, "times.csv"), times, ',')
 writedlm(joinpath(OUTDIR, SUBOUTDIR, "stepsizes.csv"), stepsizes, ',')
+writedlm(joinpath(OUTDIR, SUBOUTDIR, "nupdates.csv"), nupdates, ',')

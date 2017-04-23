@@ -12,7 +12,7 @@ OUTDIR = joinpath(ROOTDIR, "output", "one_planet")
 # DATADIR = "../../../data"
 # OUTDIR = "../../../output/one_planet"
 
-SUBOUTDIR = "MALA"
+SUBOUTDIR = "AM"
 
 include(joinpath(SRCDIR, "rv_model.jl"))
 include(joinpath(SRCDIR, "utils_ex.jl"))
@@ -20,7 +20,7 @@ include(joinpath(SRCDIR, "utils_ex.jl"))
 using RvModelKeplerian
 
 nchains = 1
-nmcmc = 110000
+nmcmc = 50000
 nburnin = 10000
 
 dataset = readdlm(joinpath(DATADIR, "one_planet.csv"), ',', header=false); # read observational data
@@ -38,11 +38,9 @@ p = BasicContMuvParameter(:p, logtarget=plogtarget, diffopts=DiffOptions(mode=:f
 
 model = likelihood_model(p, false)
 
-sampler = MALA(0.02)
+sampler = AM(0.02, 6, minorscale=0.001, c=0.01)
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
-
-mctuner = AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), verbose=false)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
@@ -54,7 +52,7 @@ while i <= nchains
   param_init = param_true.+0.01*param_perturb_scale.*randn(length(param_true))
   v0 = Dict(:p=>param_init)
 
-  job = BasicMCJob(model, sampler, mcrange, v0, tuner=mctuner, outopts=outopts)
+  job = BasicMCJob(model, sampler, mcrange, v0, outopts=outopts)
 
   tic()
   run(job)
@@ -63,7 +61,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.5 < ratio < 0.65
+  if 0.01 < ratio < 0.37
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

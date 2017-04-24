@@ -1,8 +1,8 @@
 using Klara
 
 CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
-PARENTDIR = join(split(CURRENTDIR, '/')[1:end-2], '/')
-OUTDIR = joinpath(PARENTDIR, "output")
+ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
+OUTDIR = joinpath(ROOTDIR, "output")
 
 # OUTDIR = "../../output"
 

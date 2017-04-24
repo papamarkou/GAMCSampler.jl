@@ -37,7 +37,7 @@ model = likelihood_model([p], isindexed=false)
 sampler = MAMALA(
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
   transform=H -> softabs(H, 1000.),
-  driftstep=0.25,
+  driftstep=0.02,
   minorscale=0.001,
   c=0.01
 )

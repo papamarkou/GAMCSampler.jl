@@ -20,7 +20,7 @@ include(joinpath(SRCDIR, "utils_ex.jl"))
 using RvModelKeplerian
 
 nchains = 1
-nmcmc = 110000
+nmcmc = 50000
 nburnin = 10000
 
 dataset = readdlm(joinpath(DATADIR, "one_planet.csv"), ',', header=false); # read observational data
@@ -63,7 +63,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.01 < ratio < 0.95
+  if 0.55 < ratio < 0.85
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

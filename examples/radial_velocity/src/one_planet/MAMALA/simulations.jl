@@ -20,7 +20,7 @@ include(joinpath(SRCDIR, "utils_ex.jl"))
 using RvModelKeplerian
 
 nchains = 1
-nmcmc = 110000
+nmcmc = 50000
 nburnin = 10000
 
 dataset = readdlm(joinpath(DATADIR, "one_planet.csv"), ',', header=false); # read observational data
@@ -41,8 +41,9 @@ model = likelihood_model(p, false)
 sampler = MAMALA(
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
   transform=H -> softabs(H, 1000.),
-  driftstep=0.25,
-  c=0.001
+  driftstep=0.02,
+  minorscale=0.001,
+  c=0.01
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
@@ -73,7 +74,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.24 < ratio < 0.36
+  if 0.22 < ratio < 0.37
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

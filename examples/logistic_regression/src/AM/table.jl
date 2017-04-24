@@ -10,9 +10,9 @@ SUBOUTDIR = "AM"
 
 npars = 4
 
-nchains = 10
-nmcmc = 110000
-nburnin = 10000
+nchains = 1
+nmcmc = 11000
+nburnin = 1000
 
 ratio = Array(Float64, nchains)
 essizes = Array(Float64, nchains, npars)

@@ -9,9 +9,9 @@ OUTDIR = joinpath(ROOTDIR, "output")
 
 SUBOUTDIR = "MALA"
 
-nchains = 1
-nmcmc = 11000
-nburnin = 1000
+nchains = 10
+nmcmc = 110000
+nburnin = 10000
 
 function C(n::Int, c::Float64)
   X = eye(n)
@@ -57,7 +57,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.4 < ratio < 0.7
+  if 0.45 < ratio < 0.7
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 

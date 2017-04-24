@@ -7,11 +7,11 @@ OUTDIR = joinpath(ROOTDIR, "output")
 
 # OUTDIR = "../../output"
 
-SUBOUTDIR = "MAMALA"
+SUBOUTDIR = "AM"
 
-nchains = 1
-nmcmc = 11000
-nburnin = 1000
+nchains = 10
+nmcmc = 110000
+nburnin = 10000
 
 covariates, = dataset("swiss", "measurements");
 ndata, npars = size(covariates);

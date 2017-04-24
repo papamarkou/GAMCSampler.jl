@@ -10,9 +10,9 @@ OUTDIR = joinpath(ROOTDIR, "output")
 
 SUBOUTDIR = "MAMALA"
 
-nchains = 1
-nmcmc = 11000
-nburnin = 1000
+nchains = 10
+nmcmc = 110000
+nburnin = 10000
 
 function C(n::Int, c::Float64)
   X = eye(n)

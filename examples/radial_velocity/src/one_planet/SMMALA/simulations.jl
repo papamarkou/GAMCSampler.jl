@@ -19,8 +19,8 @@ include(joinpath(SRCDIR, "utils_ex.jl"))
 
 using RvModelKeplerian
 
-nchains = 1
-nmcmc = 50000
+nchains = 10
+nmcmc = 110000
 nburnin = 10000
 
 dataset = readdlm(joinpath(DATADIR, "one_planet.csv"), ',', header=false); # read observational data

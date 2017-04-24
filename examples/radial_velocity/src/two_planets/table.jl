@@ -13,7 +13,18 @@ open(joinpath(OUTDIR, "summary.txt"), "w") do f
     out = readcsv(joinpath(OUTDIR, s, "summary.csv"))
     write(
       f,
-      @sprintf("%s & %.2f & %d & %d & %d & %d & %.2f & %.2f & %.2f\\\\\n", s, out..., out[end]/base_speed)
+      @sprintf(
+        "%s & %.2f & %d & %d & %d & %d & %.2f & %.2f & %.2f\\\\\n",
+        s,
+        out[1],
+        minimum(out[2:12]),
+        mean(out[2:12]),
+        median(out[2:12]),
+        maximum(out[2:12]),
+        out[13],
+        out[end],
+        out[end]/base_speed
+      )
     )
   end
 end

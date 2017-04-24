@@ -36,7 +36,8 @@ sampler = MAMALA(
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
   transform=H -> softabs(H, 1000.),
   driftstep=0.25,
-  c=0.001
+  minorscale=0.001,
+  c=0.01
 )
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)

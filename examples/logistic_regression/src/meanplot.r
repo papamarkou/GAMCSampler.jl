@@ -1,9 +1,8 @@
-library(data.table)
-library(stringr)
+# library(data.table)
+# library(stringr)
 
 SAMPLERDIRS <- c("AM", "MALA", "SMMALA", "MAMALA")
 
-DATADIR <- "../../data"
 OUTDIR <- "../output"
 
 nsamplerdirs <- length(SAMPLERDIRS)
@@ -16,14 +15,14 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 50000
-ci <- 5
-pi <- 2
+ci <- 9
+pi <- 4
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
 
 for (j in 1:nsamplerdirs) {
   chains <- t(fread(
-    file.path(DATADIR, SAMPLERDIRS[j], paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
+    file.path(OUTDIR, SAMPLERDIRS[j], paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
   ))
 
   for (i in 1:nmeans) {
@@ -33,13 +32,13 @@ for (j in 1:nsamplerdirs) {
 
 cols <- c("green", "blue", "red", "orange")
 
-pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
+# pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
 
 plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(0.5, 1),
+  # ylim=c(0.5, 1),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -92,4 +91,4 @@ legend(
   text.width=2000
 )
 
-dev.off()
+# dev.off()

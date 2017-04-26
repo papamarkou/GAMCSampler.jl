@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("AM", "MALA", "SMMALA", "MAMALA")
+SAMPLERDIRS <- c("MALA", "AM", "SMMALA", "MAMALA")
 
 OUTDIR <- "../output"
 

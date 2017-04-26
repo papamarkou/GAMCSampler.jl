@@ -2,7 +2,7 @@ library(data.table)
 library(stringr)
 
 OUTDIR <- "../../output"
-SUBOUTDIR <- "MALA"
+SUBOUTDIR <- "AM"
 
 npars <- 4
 
@@ -20,7 +20,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, "logit_mala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "logit_am_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,

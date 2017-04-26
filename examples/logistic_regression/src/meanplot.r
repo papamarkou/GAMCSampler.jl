@@ -1,5 +1,5 @@
-# library(data.table)
-# library(stringr)
+library(data.table)
+library(stringr)
 
 SAMPLERDIRS <- c("AM", "MALA", "SMMALA", "MAMALA")
 
@@ -15,8 +15,8 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 50000
-ci <- 9
-pi <- 4
+ci <- 4
+pi <- 2
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
 
@@ -30,15 +30,15 @@ for (j in 1:nsamplerdirs) {
   }
 }
 
-cols <- c("green", "blue", "red", "orange")
+cols <- c("green", "blue", "orange", "red")
 
-# pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
 
 plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  # ylim=c(0.5, 1),
+  ylim=c(0.5, 1.),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -50,8 +50,8 @@ plot(
 
 axis(
   2,
-  at=seq(0.5, 1, by=0.1),
-  labels=seq(0.5, 1, by=0.1),
+  at=seq(0.5, 1., by=0.1),
+  labels=seq(0.5, 1., by=0.1),
   cex.axis=1.8,
   las=1
 )
@@ -82,7 +82,7 @@ lines(
 
 legend(
   35000, 1,
-  c("MALA", "SMMALA", "AMSMMALA", "ALSMMALA"),
+  SAMPLERDIRS,
   lty=c(1, 1, 1),
   lwd=c(5, 5, 5),
   col=cols,
@@ -91,4 +91,4 @@ legend(
   text.width=2000
 )
 
-# dev.off()
+dev.off()

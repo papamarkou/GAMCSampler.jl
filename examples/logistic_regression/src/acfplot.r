@@ -1,9 +1,14 @@
 library(data.table)
 library(stringr)
 
-SAMPLERDIRS <- c("MALA", "AM", "SMMALA", "MAMALA")
+cmd_args <- commandArgs()
+CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
+ROOTDIR <- dirname(CURRENTDIR)
+OUTDIR <- file.path(ROOTDIR, "output")
 
-OUTDIR <- "../output"
+# OUTDIR <- "../output"
+
+SAMPLERDIRS <- c("MALA", "AM", "SMMALA", "MAMALA")
 
 nsamplerdirs <- length(SAMPLERDIRS)
 
@@ -15,14 +20,14 @@ nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 maxlag <- 40
-ci <- 4
+ci <- rep(4, npars)
 pi <- 2
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)
 
 for (j in 1:nsamplerdirs) {
   chains <- t(fread(
-    file.path(OUTDIR, SAMPLERDIRS[j], paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
+    file.path(OUTDIR, SAMPLERDIRS[j], paste("chain", str_pad(ci[j], 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
   ))
 
   cors[, j] <- acf(chains[, pi], lag.max=maxlag, demean=TRUE, plot=FALSE)$acf

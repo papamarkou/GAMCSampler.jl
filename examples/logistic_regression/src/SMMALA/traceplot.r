@@ -1,7 +1,13 @@
 library(data.table)
 library(stringr)
 
-OUTDIR <- "../../output"
+cmd_args <- commandArgs()
+CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
+ROOTDIR <- dirname(dirname(CURRENTDIR))
+OUTDIR <- file.path(ROOTDIR, "output")
+
+# OUTDIR <- "../../output"
+
 SUBOUTDIR <- "SMMALA"
 
 npars <- 4
@@ -20,7 +26,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, "logit_smmala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_smmala_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,

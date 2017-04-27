@@ -12,15 +12,14 @@ SAMPLERDIRS <- c("MALA", "AM", "SMMALA", "MAMALA")
 
 nsamplerdirs <- length(SAMPLERDIRS)
 
-npars <- 4
-
 nchains <- 10
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 maxlag <- 40
-ci <- rep(4, npars)
+
+ci <- c(4, 4, 4, 4)
 pi <- 2
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)
@@ -38,6 +37,10 @@ sqrtnpostburnin <- sqrt(npostburnin)
 cols <- c("green", "blue", "orange", "red")
 
 pdf(file=file.path(OUTDIR, "logit_acfplot.pdf"), width=10, height=6)
+
+oldpar <- par(no.readonly=TRUE)
+
+par(fig=c(0, 1, 0, 1), mar=c(2.25, 4, 3.5, 1)+0.1)
 
 plot(
   0:maxlag,
@@ -89,20 +92,27 @@ lines(
   pch=20
 )
 
-legend(
-  "topright",
-  SAMPLERDIRS,
-  lty=c(1, 1, 1),
-  lwd=c(5, 5, 5),
-  col=cols,
-  cex=1.5,
-  bty="n",
-  text.width=8
-)
-
 sqrt(npostburnin)
 
 abline(h=1.96/sqrtnpostburnin, lty=2)
 abline(h=-1.96/sqrtnpostburnin, lty=2)
+
+par(fig=c(0, 1, 0.89, 1), mar=c(0, 0, 0, 0), new=TRUE)
+
+plot.new()
+
+legend(
+  "center",
+  SAMPLERDIRS,
+  lty=c(1, 1, 1, 1),
+  lwd=c(5, 5, 5, 5),
+  col=cols,
+  cex=1.5,
+  bty="n",
+  text.width=0.125,
+  ncol=4
+)
+
+par(oldpar)
 
 dev.off()

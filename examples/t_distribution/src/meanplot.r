@@ -97,8 +97,8 @@ plot.new()
 legend(
   "center",
   SAMPLERDIRS,
-  lty=c(1, 1, 1),
-  lwd=c(5, 5, 5),
+  lty=c(1, 1, 1, 1),
+  lwd=c(5, 5, 5, 5),
   col=cols,
   cex=1.5,
   bty="n",

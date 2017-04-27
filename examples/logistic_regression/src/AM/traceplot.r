@@ -10,13 +10,10 @@ OUTDIR <- file.path(ROOTDIR, "output")
 
 SUBOUTDIR <- "AM"
 
-npars <- 4
-
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 10000
 ci <- 4
 pi <- 2
 
@@ -53,7 +50,7 @@ lines(
   1:npostburnin,
   rep(chainmean, npostburnin),
   type="l",
-  col="orangered1",
+  col="black",
   lwd=2
 )
 

@@ -14,8 +14,6 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 10000
-
 ci <- 1
 pi <- 17
 
@@ -25,7 +23,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_mamala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "tdist_mamala_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,

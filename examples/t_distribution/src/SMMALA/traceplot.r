@@ -14,9 +14,7 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 10000
-
-ci <- 1
+ci <- 4
 pi <- 17
 
 chains <- t(fread(
@@ -25,7 +23,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_smmala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "tdist_smmala_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,
@@ -52,7 +50,7 @@ lines(
   1:npostburnin,
   rep(chainmean, npostburnin),
   type="l",
-  col="orangered1",
+  col="black",
   lwd=2
 )
 

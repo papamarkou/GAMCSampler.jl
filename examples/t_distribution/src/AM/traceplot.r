@@ -1,7 +1,7 @@
 library(data.table)
 library(stringr)
 
-md_args <- commandArgs()
+cmd_args <- commandArgs()
 CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
 ROOTDIR <- dirname(dirname(CURRENTDIR))
 OUTDIR <- file.path(ROOTDIR, "output")
@@ -14,9 +14,7 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 10000
-
-ci <- 1
+ci <- 4
 pi <- 17
 
 chains <- t(fread(
@@ -25,7 +23,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_am_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "tdist_am_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,

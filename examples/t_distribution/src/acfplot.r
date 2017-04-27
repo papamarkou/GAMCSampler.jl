@@ -19,7 +19,7 @@ npostburnin <- nmcmc-nburnin
 
 maxlag <- 40
 
-ci <- rep(1, nsamplerdirs)
+ci <- c(4, 4, 4, 1)
 pi <- 17
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)
@@ -40,7 +40,7 @@ pdf(file=file.path(OUTDIR, "tdist_acfplot.pdf"), width=10, height=6)
 
 oldpar <- par(no.readonly=TRUE)
 
-par(fig=c(0, 1, 0, 1), mar=c(2.25, 4, 3.5, 1)+0.1, new=TRUE)
+par(fig=c(0, 1, 0, 1), mar=c(2.25, 4, 3.5, 1)+0.1)
 
 plot(
   0:maxlag,

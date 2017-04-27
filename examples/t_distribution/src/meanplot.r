@@ -19,7 +19,7 @@ npostburnin <- nmcmc-nburnin
 
 nmeans <- 50000
 
-ci <- rep(1, nsamplerdirs)
+ci <- c(4, 4, 4, 1)
 pi <- 17
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -40,13 +40,13 @@ pdf(file=file.path(OUTDIR, "tdist_meanplot.pdf"), width=10, height=6)
 
 oldpar <- par(no.readonly=TRUE)
 
-par(fig=c(0, 1, 0, 1), mar=c(2.25, 4, 3.5, 1)+0.1, new=TRUE)
+par(fig=c(0, 1, 0, 1), mar=c(2.25, 4, 3.5, 1)+0.1)
 
 plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(-1.5, 1),
+  ylim=c(-1, 2),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -58,8 +58,8 @@ plot(
 
 axis(
   2,
-  at=seq(-1.5, 1, by=0.5),
-  labels=seq(-1.5, 1, by=0.5),
+  at=seq(-1, 2, by=0.5),
+  labels=seq(-1, 2, by=0.5),
   cex.axis=1.8,
   las=1
 )

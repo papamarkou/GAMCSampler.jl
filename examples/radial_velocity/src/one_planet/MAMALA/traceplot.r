@@ -8,16 +8,17 @@ OUTDIR <- file.path(ROOTDIR, "output")
 
 # OUTDIR <- "../../output"
 
-SUBOUTDIR <- "MALA"
+SUBOUTDIR <- "MAMALA"
+
+npars <- 4
 
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
-
 ci <- 4
-pi <- 17
+pi <- 2
 
 chains <- t(fread(
   file.path(OUTDIR, SUBOUTDIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
@@ -25,7 +26,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_mala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_mamala_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,

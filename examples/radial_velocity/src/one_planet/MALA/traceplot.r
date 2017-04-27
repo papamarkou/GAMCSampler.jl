@@ -10,14 +10,15 @@ OUTDIR <- file.path(ROOTDIR, "output")
 
 SUBOUTDIR <- "MALA"
 
+npars <- 4
+
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
-
 ci <- 4
-pi <- 17
+pi <- 2
 
 chains <- t(fread(
   file.path(OUTDIR, SUBOUTDIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE

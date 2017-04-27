@@ -4,13 +4,13 @@ library(stringr)
 cmd_args <- commandArgs()
 CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
 ROOTDIR <- dirname(dirname(dirname(CURRENTDIR)))
-OUTDIR <- file.path(ROOTDIR, "output", "one_planet")
+OUTDIR <- file.path(ROOTDIR, "output", "two_planets")
 
-# OUTDIR <- "../../../output/one_planet"
+# OUTDIR <- "../../../output/two_planets"
 
-SUBOUTDIR <- "MAMALA"
+SUBOUTDIR <- "SMMALA"
 
-true_param <- 3.04452
+true_param <- 3.43399
 
 nmcmc <- 110000
 nburnin <- 10000
@@ -25,13 +25,13 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "rv_one_planet_mamala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "rv_two_planets_smmala_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,
   chains[, pi],
   type="l",
-  ylim=c(2.95, 3.15),
+  ylim=c(3.3, 3.6),
   col="steelblue2",
   xlab="",
   ylab="",
@@ -42,8 +42,8 @@ plot(
 
 axis(
   2,
-  at=seq(2.9, 3.15, by=0.05),
-  labels=seq(2.9, 3.15, by=0.05),
+  at=seq(3.3, 3.6, by=0.1),
+  labels=seq(3.3, 3.6, by=0.1),
   cex.axis=1.8,
   las=1
 )

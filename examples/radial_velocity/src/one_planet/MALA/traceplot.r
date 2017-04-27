@@ -10,6 +10,8 @@ OUTDIR <- file.path(ROOTDIR, "output", "one_planet")
 
 SUBOUTDIR <- "MALA"
 
+true_param <- 3.04452
+
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
@@ -46,12 +48,6 @@ axis(
   las=1
 )
 
-lines(
-  1:npostburnin,
-  rep(chainmean, npostburnin),
-  type="l",
-  col="black",
-  lwd=2
-)
+abline(h=true_param, lwd=2, col="black")
 
 dev.off()

@@ -3,21 +3,18 @@ library(stringr)
 
 cmd_args <- commandArgs()
 CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
-ROOTDIR <- dirname(dirname(CURRENTDIR))
-OUTDIR <- file.path(ROOTDIR, "output")
+ROOTDIR <- dirname(dirname(dirname(CURRENTDIR)))
+OUTDIR <- file.path(ROOTDIR, "output", "one_planet")
 
-# OUTDIR <- "../../output"
+# OUTDIR <- "../../../output/one_planet"
 
 SUBOUTDIR <- "AM"
-
-npars <- 4
 
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 10000
-ci <- 4
+ci <- 6
 pi <- 2
 
 chains <- t(fread(
@@ -26,13 +23,13 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_am_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "rv_one_planet_am_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,
   chains[, pi],
   type="l",
-  ylim=c(-1.2, 3),
+  ylim=c(2.95, 3.15),
   col="steelblue2",
   xlab="",
   ylab="",
@@ -43,8 +40,8 @@ plot(
 
 axis(
   2,
-  at=seq(-1, 3, by=1),
-  labels=seq(-1, 3, by=1),
+  at=seq(2.9, 3.15, by=0.05),
+  labels=seq(2.9, 3.15, by=0.05),
   cex.axis=1.8,
   las=1
 )
@@ -53,7 +50,7 @@ lines(
   1:npostburnin,
   rep(chainmean, npostburnin),
   type="l",
-  col="orangered1",
+  col="black",
   lwd=2
 )
 

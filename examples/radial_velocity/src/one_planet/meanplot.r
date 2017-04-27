@@ -3,24 +3,25 @@ library(stringr)
 
 cmd_args <- commandArgs()
 CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
-ROOTDIR <- dirname(CURRENTDIR)
-OUTDIR <- file.path(ROOTDIR, "output")
+ROOTDIR <- dirname(dirname(CURRENTDIR))
+OUTDIR <- file.path(ROOTDIR, "output", "one_planet")
 
-# OUTDIR <- "../output"
+# OUTDIR <- "../../output/one_planet"
 
 SAMPLERDIRS <- c("MALA", "AM", "SMMALA", "MAMALA")
 
 nsamplerdirs <- length(SAMPLERDIRS)
 
-npars <- 4
+true_pars <- c(3.93183, 3.04452, 0.141421, 0.141421, 1.5708, 1.0)
 
 nchains <- 10
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 50000
-ci <- rep(4, npars)
+nmeans <- npostburnin
+
+ci <- c(6, 6, 6, 4)
 pi <- 2
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -35,15 +36,21 @@ for (j in 1:nsamplerdirs) {
   }
 }
 
+# apply(submeans, 2, mean)-true_pars[pi] 
+
 cols <- c("green", "blue", "orange", "red")
 
-pdf(file=file.path(OUTDIR, "logit_meanplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, "rv_one_planet_meanplot.pdf"), width=10, height=6)
+
+oldpar <- par(no.readonly=TRUE)
+
+par(fig=c(0, 1, 0, 1), mar=c(2.25, 4, 3.5, 1)+0.1)
 
 plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(0.5, 1.),
+  ylim=c(2.95, 3.15),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -55,8 +62,8 @@ plot(
 
 axis(
   2,
-  at=seq(0.5, 1., by=0.1),
-  labels=seq(0.5, 1., by=0.1),
+  at=seq(2.95, 3.15, by=0.05),
+  labels=seq(2.95, 3.15, by=0.05),
   cex.axis=1.8,
   las=1
 )
@@ -85,15 +92,24 @@ lines(
   lwd=2
 )
 
+abline(h=true_pars[pi], lwd=2, col="black")
+
+par(fig=c(0, 1, 0.89, 1), mar=c(0, 0, 0, 0), new=TRUE)
+
+plot.new()
+
 legend(
-  35000, 1,
+  "center",
   SAMPLERDIRS,
-  lty=c(1, 1, 1),
-  lwd=c(5, 5, 5),
+  lty=c(1, 1, 1, 1),
+  lwd=c(5, 5, 5, 5),
   col=cols,
   cex=1.5,
   bty="n",
-  text.width=2000
+  text.width=0.125,
+  ncol=4
 )
+
+par(oldpar)
 
 dev.off()

@@ -16,7 +16,7 @@ npostburnin <- nmcmc-nburnin
 
 nmeans <- 10000
 
-ci <- 4
+ci <- 1
 pi <- 17
 
 chains <- t(fread(
@@ -31,7 +31,7 @@ plot(
   1:npostburnin,
   chains[, pi],
   type="l",
-  ylim=c(-1.2, 3),
+  ylim=c(-5, 5),
   col="steelblue2",
   xlab="",
   ylab="",
@@ -42,8 +42,8 @@ plot(
 
 axis(
   2,
-  at=seq(-1, 3, by=1),
-  labels=seq(-1, 3, by=1),
+  at=seq(-5, 5, by=1),
+  labels=seq(-5, 5, by=1),
   cex.axis=1.8,
   las=1
 )

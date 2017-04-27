@@ -19,7 +19,7 @@ npostburnin <- nmcmc-nburnin
 
 nmeans <- 50000
 
-ci <- rep(4, nsamplerdirs)
+ci <- rep(1, nsamplerdirs)
 pi <- 17
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -46,7 +46,7 @@ plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(-1.5, 2),
+  ylim=c(-1.5, 1),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -58,8 +58,8 @@ plot(
 
 axis(
   2,
-  at=seq(-1.5, 2, by=0.5),
-  labels=seq(-1.5, 2, by=0.5),
+  at=seq(-1.5, 1, by=0.5),
+  labels=seq(-1.5, 1, by=0.5),
   cex.axis=1.8,
   las=1
 )

@@ -1,6 +1,10 @@
 library(data.table)
 library(stringr)
 
+recursive_mean <- function(lastmean, k, x){
+  return(((k-1)*lastmean+x)/k)
+}
+
 cmd_args <- commandArgs()
 CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
 ROOTDIR <- dirname(CURRENTDIR)
@@ -23,6 +27,7 @@ ci <- c(4, 4, 4, 1)
 pi <- 17
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
+curmeans <- rep(0, nsamplerdirs)
 
 for (j in 1:nsamplerdirs) {
   chains <- t(fread(
@@ -30,7 +35,8 @@ for (j in 1:nsamplerdirs) {
   ))
 
   for (i in 1:nmeans) {
-    submeans[i, j] <- mean(chains[1:i, pi])
+    curmeans[j] <- recursive_mean(curmeans[j], i, chains[i, pi])
+    submeans[i, j] <- curmeans[j]
   }
 }
 

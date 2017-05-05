@@ -52,7 +52,7 @@ plot(
   1:nmeans,
   submeans[, 1],
   type="l",
-  ylim=c(-1, 2),
+  ylim=c(-1, 1.5),
   col=cols[1],
   lwd=2,
   xlab="",
@@ -64,8 +64,8 @@ plot(
 
 axis(
   2,
-  at=seq(-1, 2, by=0.5),
-  labels=seq(-1, 2, by=0.5),
+  at=seq(-1, 1.5, by=0.5),
+  labels=seq(-1, 1.5, by=0.5),
   cex.axis=1.8,
   las=1
 )

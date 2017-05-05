@@ -48,6 +48,6 @@ axis(
   las=1
 )
 
-abline(h=true_param, lwd=2, col="black")
+# abline(h=true_param, lwd=2, col="black")
 
 dev.off()

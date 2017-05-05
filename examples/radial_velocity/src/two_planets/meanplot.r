@@ -37,7 +37,7 @@ npostburnin <- nmcmc-nburnin
 
 nmeans <- npostburnin
 
-ci <- c(8, 3, 4, 4)
+ci <- c(3, 2, 4, 4)
 pi <- 2
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)
@@ -110,7 +110,7 @@ lines(
   lwd=2
 )
 
-abline(h=true_pars[pi], lwd=2, col="black")
+# abline(h=true_pars[pi], lwd=2, col="black")
 
 par(fig=c(0, 1, 0.89, 1), mar=c(0, 0, 0, 0), new=TRUE)
 

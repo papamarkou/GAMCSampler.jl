@@ -98,7 +98,7 @@ lines(
   lwd=2
 )
 
-abline(h=true_pars[pi], lwd=2, col="black")
+# abline(h=true_pars[pi], lwd=2, col="black")
 
 par(fig=c(0, 1, 0.89, 1), mar=c(0, 0, 0, 0), new=TRUE)
 

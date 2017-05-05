@@ -14,7 +14,7 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-ci <- 4
+ci <- 6
 pi <- 17
 
 chains <- t(fread(

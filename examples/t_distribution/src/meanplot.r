@@ -21,9 +21,9 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 50000
+nmeans <- npostburnin
 
-ci <- c(4, 4, 4, 1)
+ci <- c(6, 4, 1, 1)
 pi <- 17
 
 submeans <- matrix(data=NA, nrow=nmeans, ncol=nsamplerdirs)

@@ -19,7 +19,7 @@ npostburnin <- nmcmc-nburnin
 
 maxlag <- 40
 
-ci <- c(4, 4, 4, 1)
+ci <- c(6, 4, 1, 1)
 pi <- 17
 
 cors <- matrix(data=NA, nrow=maxlag+1, ncol=nsamplerdirs)

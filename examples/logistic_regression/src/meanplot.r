@@ -21,7 +21,7 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-nmeans <- 50000
+nmeans <- npostburnin
 
 ci <- c(4, 4, 4, 4)
 pi <- 2

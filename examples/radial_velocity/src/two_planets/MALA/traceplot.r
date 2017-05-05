@@ -16,7 +16,7 @@ nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-ci <- 8
+ci <- 3
 pi <- 2
 
 chains <- t(fread(
@@ -48,6 +48,6 @@ axis(
   las=1
 )
 
-abline(h=true_param, lwd=2, col="black")
+# abline(h=true_param, lwd=2, col="black")
 
 dev.off()

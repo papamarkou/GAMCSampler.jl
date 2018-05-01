@@ -4,7 +4,7 @@ OUTDIR = joinpath(ROOTDIR, "output")
 
 # OUTDIR = "../output"
 
-samplers = ["MALA", "AM", "SMMALA", "MAMALA"]
+samplers = ["MALA", "AM", "SMMALA", "GAMC"]
 
 base_speed = readcsv(joinpath(OUTDIR, "MALA", "summary.csv"))[end]
 

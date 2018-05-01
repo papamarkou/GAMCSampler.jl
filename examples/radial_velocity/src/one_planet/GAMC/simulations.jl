@@ -1,6 +1,6 @@
 using Distributions
 using Klara
-using MAMALASampler
+using GAMCSampler
 
 CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 ROOTDIR = splitdir(splitdir(splitdir(CURRENTDIR)[1])[1])[1]
@@ -12,7 +12,7 @@ OUTDIR = joinpath(ROOTDIR, "output", "one_planet")
 # DATADIR = "../../../data"
 # OUTDIR = "../../../output/one_planet"
 
-SUBOUTDIR = "MAMALA"
+SUBOUTDIR = "GAMC"
 
 include(joinpath(SRCDIR, "rv_model.jl"))
 include(joinpath(SRCDIR, "utils_ex.jl"))
@@ -38,7 +38,7 @@ p = BasicContMuvParameter(:p, logtarget=plogtarget, diffopts=DiffOptions(mode=:f
 
 model = likelihood_model(p, false)
 
-sampler = MAMALA(
+sampler = GAMC(
   update=(sstate, pstate, i, tot) -> rand_exp_decay_update!(sstate, pstate, i, tot, 10.),
   transform=H -> softabs(H, 1000.),
   driftstep=0.02,
@@ -48,10 +48,8 @@ sampler = MAMALA(
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
-mctuner = MAMALAMCTuner(
-  VanillaMCTuner(verbose=false),
-  VanillaMCTuner(verbose=false),
-  AcceptanceRateMCTuner(0.35, verbose=false)
+mctuner = GAMCMCTuner(
+  VanillaMCTuner(verbose=false), VanillaMCTuner(verbose=false), AcceptanceRateMCTuner(0.35, verbose=false)
 )
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])

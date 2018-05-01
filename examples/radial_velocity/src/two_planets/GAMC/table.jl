@@ -6,7 +6,7 @@ OUTDIR = joinpath(ROOTDIR, "output", "two_planets")
 
 # OUTDIR = "../../../output/two_planets"
 
-SUBOUTDIR = "MAMALA"
+SUBOUTDIR = "GAMC"
 
 npars = 11
 

@@ -8,14 +8,14 @@ OUTDIR <- file.path(ROOTDIR, "output")
 
 # OUTDIR <- "../../output"
 
-SUBOUTDIR <- "MAMALA"
+SUBOUTDIR <- "GAMC"
 
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-ci <- 4
-pi <- 2
+ci <- 1
+pi <- 17
 
 chains <- t(fread(
   file.path(OUTDIR, SUBOUTDIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
@@ -23,13 +23,13 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_mamala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "tdist_gamc_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,
   chains[, pi],
   type="l",
-  ylim=c(-1.2, 3),
+  ylim=c(-5, 5),
   col="steelblue2",
   xlab="",
   ylab="",
@@ -40,8 +40,8 @@ plot(
 
 axis(
   2,
-  at=seq(-1, 3, by=1),
-  labels=seq(-1, 3, by=1),
+  at=seq(-5, 5, by=1),
+  labels=seq(-5, 5, by=1),
   cex.axis=1.8,
   las=1
 )

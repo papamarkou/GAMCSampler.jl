@@ -1,6 +1,6 @@
 using Distributions
 using Klara
-using MAMALASampler
+using GAMCSampler
 
 CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 ROOTDIR = splitdir(splitdir(splitdir(CURRENTDIR)[1])[1])[1]

@@ -1,14 +1,14 @@
 using Klara
 
 CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
-ROOTDIR = splitdir(splitdir(splitdir(CURRENTDIR)[1])[1])[1]
-OUTDIR = joinpath(ROOTDIR, "output", "one_planet")
+ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
+OUTDIR = joinpath(ROOTDIR, "output")
 
-# OUTDIR = "../../../output/one_planet"
+# OUTDIR = "../../output"
 
-SUBOUTDIR = "MAMALA"
+SUBOUTDIR = "GAMC"
 
-npars = 6
+npars = 4
 
 nchains = 10
 nmcmc = 110000

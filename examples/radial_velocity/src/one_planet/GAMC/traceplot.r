@@ -3,19 +3,21 @@ library(stringr)
 
 cmd_args <- commandArgs()
 CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, perl=TRUE)))
-ROOTDIR <- dirname(dirname(CURRENTDIR))
-OUTDIR <- file.path(ROOTDIR, "output")
+ROOTDIR <- dirname(dirname(dirname(CURRENTDIR)))
+OUTDIR <- file.path(ROOTDIR, "output", "one_planet")
 
-# OUTDIR <- "../../output"
+# OUTDIR <- "../../../output/one_planet"
 
-SUBOUTDIR <- "MAMALA"
+SUBOUTDIR <- "GAMC"
+
+true_param <- 3.04452
 
 nmcmc <- 110000
 nburnin <- 10000
 npostburnin <- nmcmc-nburnin
 
-ci <- 1
-pi <- 17
+ci <- 4
+pi <- 2
 
 chains <- t(fread(
   file.path(OUTDIR, SUBOUTDIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
@@ -23,13 +25,13 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "tdist_mamala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "rv_one_planet_gamc_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,
   chains[, pi],
   type="l",
-  ylim=c(-5, 5),
+  ylim=c(2.95, 3.15),
   col="steelblue2",
   xlab="",
   ylab="",
@@ -40,18 +42,12 @@ plot(
 
 axis(
   2,
-  at=seq(-5, 5, by=1),
-  labels=seq(-5, 5, by=1),
+  at=seq(2.9, 3.15, by=0.05),
+  labels=seq(2.9, 3.15, by=0.05),
   cex.axis=1.8,
   las=1
 )
 
-lines(
-  1:npostburnin,
-  rep(chainmean, npostburnin),
-  type="l",
-  col="black",
-  lwd=2
-)
+# abline(h=true_param, lwd=2, col="black")
 
 dev.off()

@@ -8,7 +8,7 @@ OUTDIR <- file.path(ROOTDIR, "output", "two_planets")
 
 # OUTDIR <- "../../../output/two_planets"
 
-SUBOUTDIR <- "MAMALA"
+SUBOUTDIR <- "GAMC"
 
 true_param <- 3.43399
 
@@ -25,7 +25,7 @@ chains <- t(fread(
 
 chainmean = mean(chains[, pi])
 
-pdf(file=file.path(OUTDIR, SUBOUTDIR, "rv_two_planets_mamala_traceplot.pdf"), width=10, height=6)
+pdf(file=file.path(OUTDIR, SUBOUTDIR, "rv_two_planets_gamc_traceplot.pdf"), width=10, height=6)
 
 plot(
   1:npostburnin,

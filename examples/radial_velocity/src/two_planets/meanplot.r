@@ -12,7 +12,7 @@ OUTDIR <- file.path(ROOTDIR, "output", "two_planets")
 
 # OUTDIR <- "../../output/two_planets"
 
-SAMPLERDIRS <- c("MALA", "AM", "SMMALA", "MAMALA")
+SAMPLERDIRS <- c("MALA", "AM", "SMMALA", "GAMC")
 
 nsamplerdirs <- length(SAMPLERDIRS)
 

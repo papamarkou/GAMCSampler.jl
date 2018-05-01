@@ -1,4 +1,4 @@
-function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
+function codegen(::Type{Val{:iterate}}, ::Type{GAMC}, job::BasicMCJob)
   local result::Expr
   burninbody = []
   ambody = []
@@ -8,7 +8,7 @@ function codegen(::Type{Val{:iterate}}, ::Type{MAMALA}, job::BasicMCJob)
 
   vform = variate_form(job.pstate)
   if vform != Multivariate
-    error("Only multivariate parameter states allowed in MAMALA code generation")
+    error("Only multivariate parameter states allowed in GAMC code generation")
   end
 
   push!(body, :(_job.sstate.count += 1))

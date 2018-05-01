@@ -1,10 +1,10 @@
-### MAMALA state subtypes
+### GAMC state subtypes
 
-abstract MAMALAState <: LMCSamplerState
+abstract GAMCState <: LMCSamplerState
 
-## MuvMAMALAState holds the internal state ("local variables") of the MAMALA sampler for multivariate parameters
+## MuvGAMCState holds the internal state ("local variables") of the GAMC sampler for multivariate parameters
 
-type MuvMAMALAState <: MAMALAState
+type MuvGAMCState <: GAMCState
   proposal::Union{MultivariateGMM, AbstractMvNormal, Void}
   pstate::ParameterState{Continuous, Multivariate}
   tune::MCTunerState
@@ -25,7 +25,7 @@ type MuvMAMALAState <: MAMALAState
   count::Integer
   updatetensorcount::Integer
 
-  function MuvMAMALAState(
+  function MuvGAMCState(
     proposal::Union{MultivariateGMM, AbstractMvNormal, Void},
     pstate::ParameterState{Continuous, Multivariate},
     tune::MCTunerState,
@@ -88,14 +88,14 @@ type MuvMAMALAState <: MAMALAState
   end
 end
 
-MuvMAMALAState(
+MuvGAMCState(
   pstate::ParameterState{Continuous, Multivariate},
   sqrtminorscale::Real,
   w::RealVector,
-  tune::MCTunerState=MAMALAMCTune(),
+  tune::MCTunerState=GAMCMCTune(),
   lastmean::RealVector=Array(eltype(pstate), pstate.size)
 ) =
-  MuvMAMALAState(
+  MuvGAMCState(
   nothing,
   pstate,
   tune,
@@ -117,9 +117,9 @@ MuvMAMALAState(
   0
 )
 
-### Manifold adaptive Metropolis-adjusted Langevin algorithm (MAMALA)
+### Geometric adaptive Monte Carlo (GAMC)
 
-immutable MAMALA <: LMCSampler
+immutable GAMC <: LMCSampler
   update!::Function
   transform::Union{Function, Void}
   driftstep::Real
@@ -127,14 +127,7 @@ immutable MAMALA <: LMCSampler
   c::Real # Non-negative constant with relative small value that determines the mixture weight of the stabilizing component
   t0::Integer
 
-  function MAMALA(
-    update!::Function,
-    transform::Union{Function, Void},
-    driftstep::Real,
-    minorscale::Real,
-    c::Real,
-    t0::Integer
-  )
+  function GAMC(update!::Function, transform::Union{Function, Void}, driftstep::Real, minorscale::Real, c::Real, t0::Integer)
     @assert driftstep > 0 "Drift step is not positive"
     @assert 0 < minorscale "Constant minorscale must be positive, got $minorscale"
     @assert 0 <= c "Constant c must be non-negative"
@@ -143,7 +136,7 @@ immutable MAMALA <: LMCSampler
   end
 end
 
-MAMALA(;
+GAMC(;
   update::Function=rand_update!,
   transform::Union{Function, Void}=nothing,
   driftstep::Real=1.,
@@ -151,16 +144,16 @@ MAMALA(;
   c::Real=0.05,
   t0::Integer=3
 ) =
-  MAMALA(update, transform, driftstep, minorscale, c, t0)
+  GAMC(update, transform, driftstep, minorscale, c, t0)
 
-### Initialize MAMALA sampler
+### Initialize GAMC sampler
 
 ## Initialize parameter state
 
 function initialize!(
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::MAMALA,
+  sampler::GAMC,
   outopts::Dict
 )
   parameter.uptotensorlogtarget!(pstate)
@@ -178,10 +171,10 @@ function initialize!(
   end
 end
 
-## Initialize MAMALA state
+## Initialize GAMC state
 
 set_gmm(
-  sampler::MAMALA,
+  sampler::GAMC,
   pstate::ParameterState{Continuous, Multivariate},
   C::RealMatrix,
   corescale::Real,
@@ -190,17 +183,13 @@ set_gmm(
 ) =
   MixtureModel([MvNormal(pstate.value, corescale*C), MvNormal(pstate.value, sqrtminorscale)], w)
 
-set_gmm!(
-  sstate::MuvMAMALAState,
-  sampler::MAMALA,
-  pstate::ParameterState{Continuous, Multivariate}
-) =
+set_gmm!(sstate::MuvGAMCState, sampler::GAMC, pstate::ParameterState{Continuous, Multivariate}) =
   sstate.proposal = set_gmm(
     sampler, pstate, sstate.oldinvtensor, sstate.tune.totaltune.step, sstate.sqrtminorscale, sstate.w
   )
 
-tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =
-  MAMALAMCTune(
+tuner_state(sampler::GAMC, tuner::GAMCMCTuner) =
+  GAMCMCTune(
     BasicMCTune(NaN, 0, 0, tuner.smmalatuner.period),
     BasicMCTune(NaN, 0, 0, tuner.amtuner.period),
     BasicMCTune(sampler.driftstep, 0, 0, tuner.totaltuner.period)
@@ -208,7 +197,7 @@ tuner_state(sampler::MAMALA, tuner::MAMALAMCTuner) =
 
 function sampler_state(
   parameter::Parameter{Continuous, Multivariate},
-  sampler::MAMALA,
+  sampler::GAMC,
   tuner::MCTuner,
   pstate::ParameterState{Continuous, Multivariate},
   vstate::VariableStateVector
@@ -216,7 +205,7 @@ function sampler_state(
   oldinvtensor = inv(pstate.tensorlogtarget)
   w = [1-sampler.c, sampler.c]
 
-  sstate = MuvMAMALAState(
+  sstate = MuvGAMCState(
     generate_empty(pstate, parameter.diffmethods, parameter.diffopts),
     sqrt(sampler.minorscale),
     w,
@@ -232,7 +221,7 @@ function sampler_state(
   sstate
 end
 
-### Reset MAMALA sampler
+### Reset GAMC sampler
 
 ## Reset parameter state
 
@@ -240,7 +229,7 @@ function reset!(
   pstate::ParameterState{Continuous, Multivariate},
   x::RealVector,
   parameter::Parameter{Continuous, Multivariate},
-  sampler::MAMALA
+  sampler::GAMC
 )
   pstate.value = copy(x)
   parameter.uptotensorlogtarget!(pstate)
@@ -250,10 +239,10 @@ end
 ## Reset sampler state
 
 function reset!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   parameter::Parameter{Continuous, Multivariate},
-  sampler::MAMALA,
+  sampler::GAMC,
   tuner::MCTuner
 )
   reset!(sstate.tune, sampler, tuner)
@@ -264,13 +253,13 @@ function reset!(
   sstate.count = 0
 end
 
-### MAMALA schedules
+### GAMC schedules
 
-am_only_update!(sstate::MuvMAMALAState, pstate::ParameterState{Continuous, Multivariate}, i::Integer, tot::Integer) =
+am_only_update!(sstate::MuvGAMCState, pstate::ParameterState{Continuous, Multivariate}, i::Integer, tot::Integer) =
   sstate.presentupdatetensor = false
 
 cos_update!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   i::Integer,
   tot::Integer,
@@ -281,7 +270,7 @@ cos_update!(
   sstate.presentupdatetensor = rand(Bernoulli(b*cos(a*i*pi/tot)+c))
 
 mod_update!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   i::Integer,
   tot::Integer,
@@ -290,7 +279,7 @@ mod_update!(
   sstate.presentupdatetensor = mod(i, n) == 0 ? true : false
 
 rand_exp_decay_update!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   i::Integer,
   tot::Integer,
@@ -300,7 +289,7 @@ rand_exp_decay_update!(
   sstate.presentupdatetensor = rand(Bernoulli(exp_decay(i, tot, a, b)))
 
 rand_lin_decay_update!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   i::Integer,
   tot::Integer,
@@ -310,7 +299,7 @@ rand_lin_decay_update!(
   sstate.presentupdatetensor = rand(Bernoulli(lin_decay(i, tot, a, b)))
 
 rand_pow_decay_update!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   i::Integer,
   tot::Integer,
@@ -320,7 +309,7 @@ rand_pow_decay_update!(
   sstate.presentupdatetensor = rand(Bernoulli(pow_decay(i, tot, a, b)))
 
 rand_quad_decay_update!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   i::Integer,
   tot::Integer,
@@ -330,7 +319,7 @@ rand_quad_decay_update!(
   sstate.presentupdatetensor = rand(Bernoulli(quad_decay(i, tot, a, b)))
 
 rand_update!(
-  sstate::MuvMAMALAState,
+  sstate::MuvGAMCState,
   pstate::ParameterState{Continuous, Multivariate},
   i::Integer,
   tot::Integer,
@@ -338,14 +327,14 @@ rand_update!(
 ) =
   sstate.presentupdatetensor = rand(Bernoulli(p))
 
-smmala_only_update!(sstate::MuvMAMALAState, pstate::ParameterState{Continuous, Multivariate}, i::Integer, tot::Integer) =
+smmala_only_update!(sstate::MuvGAMCState, pstate::ParameterState{Continuous, Multivariate}, i::Integer, tot::Integer) =
   sstate.presentupdatetensor = true
 
-### MAMALA show methods
+### GAMC show methods
 
-Base.show(io::IO, sampler::MAMALA) = print(
+Base.show(io::IO, sampler::GAMC) = print(
   io,
-  "MAMALA sampler: drift step = ",
+  "GAMC sampler: drift step = ",
   sampler.driftstep,
   ", scaling of stabilizing covariance = ",
   sampler.minorscale,
@@ -353,4 +342,4 @@ Base.show(io::IO, sampler::MAMALA) = print(
   sampler.c
 )
 
-Base.show(io::IO, ::MIME"text/plain", sampler::MAMALA) = show(io, sampler)
+Base.show(io::IO, ::MIME"text/plain", sampler::GAMC) = show(io, sampler)

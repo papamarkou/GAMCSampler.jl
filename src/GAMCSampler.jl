@@ -1,4 +1,4 @@
-module MAMALASampler
+module GAMCSampler
 
 using Distributions
 using Klara
@@ -22,11 +22,11 @@ import Klara:
   variate_form
 
 export
-  MAMALA,
-  MAMALAMCTune,
-  MAMALAMCTuner,
-  MAMALAState,
-  MuvMAMALAState,
+  GAMC,
+  GAMCMCTune,
+  GAMCMCTuner,
+  GAMCState,
+  MuvGAMCState,
   am_only_update!,
   cos_update!,
   exp_decay,
@@ -42,8 +42,8 @@ export
   smmala_only_update!
 
 include("stats/schedule.jl")
-include("tuners/MAMALAMCTuner.jl")
-include("samplers/MAMALA.jl")
-include("samplers/iterate/MAMALA.jl")
+include("tuners/GAMCMCTuner.jl")
+include("samplers/GAMC.jl")
+include("samplers/iterate/GAMC.jl")
 
 end # module

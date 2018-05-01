@@ -1,1 +1,1 @@
-# MAMALA
+# GAMC

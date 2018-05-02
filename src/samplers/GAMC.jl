@@ -332,7 +332,7 @@ smmala_only_update!(sstate::MuvGAMCState, pstate::ParameterState{Continuous, Mul
 
 ### GAMC show methods
 
-Base.show(io::IO, sampler::GAMC) = print(
+show(io::IO, sampler::GAMC) = print(
   io,
   "GAMC sampler: drift step = ",
   sampler.driftstep,
@@ -341,5 +341,3 @@ Base.show(io::IO, sampler::GAMC) = print(
   ", weight of stabilizing mixture component = ",
   sampler.c
 )
-
-Base.show(io::IO, ::MIME"text/plain", sampler::GAMC) = show(io, sampler)

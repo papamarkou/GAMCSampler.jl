@@ -386,3 +386,341 @@ function codegen(::Type{Val{:iterate}}, ::Type{GAMC}, job::BasicMCJob)
 
   result
 end
+
+function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
+  job.sstate.count += 1
+
+  if (
+    job.tuner.totaltuner.verbose ||
+    job.tuner.smmalatuner.verbose ||
+    job.tuner.amtuner.verbose ||
+    isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+  )
+    job.sstate.tune.totaltune.proposed += 1
+  end
+
+  if job.sstate.count > job.sampler.t0
+    job.sampler.update!(job.sstate, job.pstate, job.sstate.count, job.range.nsteps)
+  end
+
+  if job.sstate.presentupdatetensor
+    # smmalabody
+    job.sstate.updatetensorcount += 1
+
+    if job.tuner.smmalatuner.verbose
+      job.sstate.tune.smmalatune.proposed += 1
+    end
+
+    if !_job.sstate.pastupdatetensor
+      # smmalapasttensorbody
+      job.parameter.uptotensorlogtarget!(job.pstate)
+
+      if job.sampler.transform != nothing
+        job.pstate.tensorlogtarget[:, :] = job.sampler.transform(job.pstate.tensorlogtarget)
+      end
+
+      job.sstate.oldinvtensor[:, :] = inv(job.pstate.tensorlogtarget)
+
+      job.sstate.oldfirstterm[:] = job.sstate.oldinvtensor*job.pstate.gradlogtarget
+
+      job.sstate.cholinvtensor[:, :] = ctranspose(chol(Hermitian(job.sstate.oldinvtensor)))
+    end
+
+    job.sstate.μ[:] = job.pstate.value+0.5*job.sstate.tune.totaltune.step*job.sstate.oldfirstterm
+
+    job.sstate.pstate.value[:] = job.sstate.μ+job.sstate.sqrttunestep*job.sstate.cholinvtensor*randn(job.pstate.size)
+
+    job.parameter.uptotensorlogtarget!(job.sstate.pstate)
+
+    if job.sampler.transform != nothing
+      job.sstate.pstate.tensorlogtarget[:, :] = job.sampler.transform(job.sstate.pstate.tensorlogtarget)
+    end
+
+    job.sstate.newinvtensor[:, :] = inv(job.sstate.pstate.tensorlogtarget)
+
+    job.sstate.ratio = job.sstate.pstate.logtarget-job.pstate.logtarget
+
+    job.sstate.ratio += (
+      0.5*(
+        logdet(job.sstate.tune.totaltune.step*job.sstate.oldinvtensor)+dot(
+          job.sstate.pstate.value-job.sstate.μ,
+          job.pstate.tensorlogtarget*(job.sstate.pstate.value-job.sstate.μ)
+        )/job.sstate.tune.totaltune.step
+      )
+    )
+
+    job.sstate.newfirstterm[:] = job.sstate.newinvtensor*job.sstate.pstate.gradlogtarget
+
+    job.sstate.μ[:] = job.sstate.pstate.value+0.5*job.sstate.tune.totaltune.step*job.sstate.newfirstterm
+
+    job.sstate.ratio -= (
+      0.5*(
+        logdet(job.sstate.tune.totaltune.step*job.sstate.newinvtensor)+dot(
+          job.pstate.value-job.sstate.μ,
+          job.sstate.pstate.tensorlogtarget*(job.pstate.value-job.sstate.μ)
+        )/_job.sstate.tune.totaltune.step
+      )
+    )
+
+    if job.sstate.ratio > 0 || (job.sstate.ratio > log(rand()))
+      # update
+      job.pstate.value = copy(job.sstate.pstate.value)
+
+      job.pstate.gradlogtarget = copy(job.sstate.pstate.gradlogtarget)
+
+      if in(:gradloglikelihood, job.outopts[:monitor]) && job.parameter.gradloglikelihood! != nothing
+        job.pstate.gradloglikelihood = copy(job.sstate.pstate.gradloglikelihood)
+      end
+
+      if in(:gradlogprior, job.outopts[:monitor]) && job.parameter.gradlogprior! != nothing
+        job.pstate.gradlogprior = copy(job.sstate.pstate.gradlogprior)
+      end
+
+      job.pstate.tensorlogtarget = copy(job.sstate.pstate.tensorlogtarget)
+
+      if in(:tensorloglikelihood, job.outopts[:monitor]) && job.parameter.tensorloglikelihood! != nothing
+        job.pstate.tensorloglikelihood = copy(job.sstate.pstate.tensorloglikelihood)
+      end
+
+      if in(:tensorlogprior, job.outopts[:monitor]) && job.parameter.tensorlogprior! != nothing
+        job.pstate.tensorlogprior = copy(job.sstate.pstate.tensorlogprior)
+      end
+
+      job.sstate.oldinvtensor = copy(job.sstate.newinvtensor)
+
+      job.sstate.cholinvtensor[:, :] = ctranspose(chol(Hermitian(job.sstate.newinvtensor)))
+
+      job.sstate.oldfirstterm = copy(job.sstate.newfirstterm)
+
+      job.pstate.logtarget = job.sstate.pstate.logtarget
+
+      if in(:loglikelihood, job.outopts[:monitor]) && job.parameter.loglikelihood! != nothing
+        job.pstate.loglikelihood = job.sstate.pstate.loglikelihood
+      end
+
+      if in(:logprior, job.outopts[:monitor]) && job.parameter.logprior! != nothing
+        job.pstate.logprior = job.sstate.pstate.logprior
+      end
+
+      if !isempty(job.sstate.diagnosticindices)
+        if haskey(job.sstate.diagnosticindices, :accept)
+          job.pstate.diagnosticvalues[job.sstate.diagnosticindices[:accept]] = true
+        end
+      end
+
+      if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+        job.sstate.tune.totaltune.accepted += 1
+      end
+
+      if job.tuner.smmalatuner.verbose
+        job.sstate.tune.smmalatune.accepted += 1
+      end
+    else
+      # noupdate
+      if !isempty(job.sstate.diagnosticindices)
+        if haskey(job.sstate.diagnosticindices, :accept)
+          job.pstate.diagnosticvalues[job.sstate.diagnosticindices[:accept]] = false
+        end
+      end
+    end
+  else
+    # ambody
+    if job.tuner.amtuner.verbose
+      job.sstate.tune.amtune.proposed += 1
+    end
+
+    covariance!(
+      job.sstate.oldinvtensor,
+      job.sstate.oldinvtensor,
+      job.sstate.count-2,
+      job.pstate.value,
+      job.sstate.lastmean,
+      job.sstate.secondlastmean
+    )
+
+    job.sstate.oldinvtensor[:, :] = Hermitian(job.sstate.oldinvtensor)
+
+    set_gmm!(job.sstate, job.sampler, job.pstate)
+
+    job.sstate.pstate.value[:] =  rand(job.sstate.proposal)
+
+    job.parameter.logtarget!(job.sstate.pstate)
+
+    job.sstate.ratio = job.sstate.pstate.logtarget-job.pstate.logtarget
+
+    job.sstate.ratio -= logpdf(job.sstate.proposal, job.sstate.pstate.value)
+
+    set_gmm!(job.sstate, job.sampler, job.sstate.pstate)
+
+    job.sstate.ratio += logpdf(job.sstate.proposal, job.pstate.value)
+
+    if job.sstate.ratio > 0 || (job.sstate.ratio > log(rand()))
+      # update
+      job.pstate.value = copy(job.sstate.pstate.value)
+
+      job.pstate.logtarget = job.sstate.pstate.logtarget
+
+      if in(:loglikelihood, job.outopts[:monitor]) && job.parameter.loglikelihood! != nothing
+        job.pstate.loglikelihood = job.sstate.pstate.loglikelihood
+      end
+
+      if in(:logprior, job.outopts[:monitor]) && job.parameter.logprior! != nothing
+        job.pstate.logprior = job.sstate.pstate.logprior
+      end
+
+      if !isempty(job.sstate.diagnosticindices)
+        if haskey(job.sstate.diagnosticindices, :accept)
+          job.pstate.diagnosticvalues[job.sstate.diagnosticindices[:accept]] = true
+        end
+      end
+
+      if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+        job.sstate.tune.totaltune.accepted += 1
+      end
+
+      if job.tuner.amtuner.verbose
+        job.sstate.tune.amtune.accepted += 1
+      end
+    else
+      # noupdate
+      if !isempty(job.sstate.diagnosticindices)
+        if haskey(job.sstate.diagnosticindices, :accept)
+          job.pstate.diagnosticvalues[job.sstate.diagnosticindices[:accept]] = false
+        end
+      end
+    end
+  end
+
+  job.sstate.secondlastmean = copy(job.sstate.lastmean)
+
+  recursive_mean!(job.sstate.lastmean, job.sstate.lastmean, job.sstate.count, job.pstate.value)
+
+  job.sstate.pastupdatetensor = job.sstate.presentupdatetensor
+
+  if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(rate!(_job.sstate.tune.totaltune)))
+  end
+
+  if job.tuner.smmalatuner.verbose
+    push!(
+      burninbody,
+      :(_job.sstate.tune.smmalafrequency = _job.sstate.tune.smmalatune.proposed/_job.sstate.tune.totaltune.proposed)
+    )
+    push!(burninbody, :(rate!(_job.sstate.tune.smmalatune)))
+  end
+
+  if job.tuner.amtuner.verbose
+    push!(
+      burninbody,
+      :(_job.sstate.tune.amfrequency = _job.sstate.tune.amtune.proposed/_job.sstate.tune.totaltune.proposed)
+    )
+    push!(burninbody, :(rate!(_job.sstate.tune.amtune)))
+  end
+
+  if job.tuner.totaltuner.verbose || job.tuner.smmalatuner.verbose || job.tuner.amtuner.verbose
+    fmt_tot_iter = format_iteration(ndigits(job.range.burnin))
+    fmt_burnin_iter = format_iteration(ndigits(job.tuner.totaltuner.period))
+    fmt_perc = format_percentage()
+
+    push!(burninbody, :(println(
+      "Burnin iteration ",
+      $(fmt_tot_iter)(_job.sstate.count),
+      " out of ",
+      _job.range.burnin,
+      "..."
+    )))
+
+    if job.tuner.totaltuner.verbose
+      push!(burninbody, :(println(
+        "  Total : ",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.accepted),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.totaltune.rate),
+        "%) acceptance rate"
+      )))
+    end
+
+    if job.tuner.smmalatuner.verbose
+      push!(burninbody, :(println(
+        "  SMMALA: ",
+        $(fmt_burnin_iter)(_job.sstate.tune.smmalatune.accepted),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.smmalatune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.smmalatune.rate),
+        "%) acceptance rate, ",
+        $(fmt_burnin_iter)(_job.sstate.tune.smmalatune.proposed),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.smmalafrequency),
+        "%) running frequency"
+      )))
+    end
+
+    if job.tuner.amtuner.verbose
+      push!(burninbody, :(println(
+        "  AM    : ",
+        $(fmt_burnin_iter)(_job.sstate.tune.amtune.accepted),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.amtune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.amtune.rate),
+        "%) acceptance rate, ",
+        $(fmt_burnin_iter)(_job.sstate.tune.amtune.proposed),
+        "/",
+        $(fmt_burnin_iter)(_job.sstate.tune.totaltune.proposed),
+        " (",
+        $(fmt_perc)(100*_job.sstate.tune.amfrequency),
+        "%) running frequency"
+      )))
+    end
+  end
+
+  if isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+    push!(burninbody, :(tune!(_job.sstate.tune.totaltune, _job.tuner.totaltuner)))
+    push!(burninbody, :(_job.sstate.sqrttunestep = sqrt(_job.sstate.tune.totaltune.step)))
+  end
+
+  if job.tuner.smmalatuner.verbose
+    push!(burninbody, :(reset_burnin!(_job.sstate.tune.smmalatune)))
+  end
+
+  if job.tuner.amtuner.verbose
+    push!(burninbody, :(reset_burnin!(_job.sstate.tune.amtune)))
+  end
+
+  if (
+    job.tuner.totaltuner.verbose ||
+    job.tuner.smmalatuner.verbose ||
+    job.tuner.amtuner.verbose ||
+    isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+  )
+    push!(burninbody, :(_job.sstate.tune.totaltune.totproposed += _job.sstate.tune.totaltune.proposed))
+
+    push!(burninbody, :(_job.sstate.tune.totaltune.proposed = 0))
+
+    if job.tuner.totaltuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
+      push!(burninbody, :(_job.sstate.tune.totaltune.accepted = 0))
+      push!(burninbody, :(_job.sstate.tune.totaltune.rate = NaN))
+    end
+
+    push!(
+      body,
+      Expr(
+        :if,
+        :(
+          _job.sstate.tune.totaltune.totproposed <= _job.range.burnin &&
+          mod(_job.sstate.tune.totaltune.proposed, _job.tuner.totaltuner.period) == 0
+        ),
+        Expr(:block, burninbody...)
+      )
+    )
+  end
+
+  if !job.plain
+    push!(body, :(produce()))
+  end
+end

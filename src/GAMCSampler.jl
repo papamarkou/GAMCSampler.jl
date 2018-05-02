@@ -7,7 +7,6 @@ import Base: show
 
 import Klara:
   RealLowerTriangular,
-  codegen,
   format_iteration,
   format_percentage,
   generate_empty,
@@ -39,6 +38,7 @@ export
   rand_pow_decay_update!,
   rand_quad_decay_update!,
   rand_update!,
+  show,
   smmala_only_update!
 
 include("stats/schedule.jl")

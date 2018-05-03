@@ -42,7 +42,7 @@ export
   smmala_only_update!
 
 include("stats/schedule.jl")
-include("tuners/GAMCMCTuner.jl")
+include("tuners/GAMCTuner.jl")
 include("samplers/GAMC.jl")
 include("samplers/iterate/GAMC.jl")
 

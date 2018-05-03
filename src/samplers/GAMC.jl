@@ -24,6 +24,7 @@ type MuvGAMCState <: GAMCState
   pastupdatetensor::Bool
   count::Integer
   updatetensorcount::Integer
+  fmt_iter::Union{Function, Void}
 
   function MuvGAMCState(
     proposal::Union{MultivariateGMM, AbstractMvNormal, Void},
@@ -44,7 +45,8 @@ type MuvGAMCState <: GAMCState
     presentupdatetensor::Bool,
     pastupdatetensor::Bool,
     count::Integer,
-    updatetensorcount::Integer
+    updatetensorcount::Integer,
+    fmt_iter::Union{Function, Void}
   )
     if !isnan(ratio)
       @assert 0 < ratio < 1 "Acceptance ratio should be between 0 and 1"
@@ -83,7 +85,8 @@ type MuvGAMCState <: GAMCState
       presentupdatetensor,
       pastupdatetensor,
       count,
-      updatetensorcount
+      updatetensorcount,
+      nothing
     )
   end
 end
@@ -114,7 +117,8 @@ MuvGAMCState(
   true,
   false,
   0,
-  0
+  0,
+  nothing
 )
 
 ### Geometric adaptive Monte Carlo (GAMC)
@@ -217,6 +221,7 @@ function sampler_state(
   sstate.oldinvtensor[:, :] = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor[:, :] = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
   sstate.oldfirstterm[:] = sstate.oldinvtensor*pstate.gradlogtarget
+  sstate.fmt_iter = format_iteration(ndigits(tuner.totaltuner.period))
 
   sstate
 end

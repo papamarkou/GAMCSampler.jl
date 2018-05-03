@@ -24,7 +24,7 @@ mutable struct MuvGAMCState <: GAMCState{Multivariate}
   pastupdatetensor::Bool
   count::Integer
   updatetensorcount::Integer
-  fmt_iter::Union{Function, Void}
+  diagnosticindices::Dict{Symbol, Integer}
 
   function MuvGAMCState(
     proposal::Union{MultivariateGMM, AbstractMvNormal, Void},
@@ -46,7 +46,7 @@ mutable struct MuvGAMCState <: GAMCState{Multivariate}
     pastupdatetensor::Bool,
     count::Integer,
     updatetensorcount::Integer,
-    fmt_iter::Union{Function, Void}
+    diagnosticindices::Dict{Symbol, Integer}
   )
     if !isnan(ratio)
       @assert 0 < ratio < 1 "Acceptance ratio should be between 0 and 1"
@@ -86,7 +86,7 @@ mutable struct MuvGAMCState <: GAMCState{Multivariate}
       pastupdatetensor,
       count,
       updatetensorcount,
-      nothing
+      diagnosticindices
     )
   end
 end
@@ -95,7 +95,7 @@ MuvGAMCState(
   pstate::ParameterState{Continuous, Multivariate},
   sqrtminorscale::Real,
   w::RealVector,
-  tune::MCTunerState=GAMCMCTune(),
+  tune::MCTunerState=GAMCTune(),
   lastmean::RealVector=Array(eltype(pstate), pstate.size)
 ) =
   MuvGAMCState(
@@ -118,7 +118,7 @@ MuvGAMCState(
   false,
   0,
   0,
-  nothing
+  Dict{Symbol, Integer}()
 )
 
 ### Geometric adaptive Monte Carlo (GAMC)
@@ -166,12 +166,12 @@ function initialize!(
   end
   pstate.diagnosticvalues[1] = false
   @assert isfinite(pstate.logtarget) "Log-target not finite: initial value out of support"
-  @assert all(isfinite(pstate.gradlogtarget)) "Gradient of log-target not finite: initial values out of support"
-  @assert all(isfinite(pstate.tensorlogtarget)) "Tensor of log-target not finite: initial values out of support"
+  @assert all(isfinite.(pstate.gradlogtarget)) "Gradient of log-target not finite: initial values out of support"
+  @assert all(isfinite.(pstate.tensorlogtarget)) "Tensor of log-target not finite: initial values out of support"
 
   if !isempty(outopts[:diagnostics])
     pstate.diagnostickeys = copy(outopts[:diagnostics])
-    pstate.diagnosticvalues = Array(Any, length(pstate.diagnostickeys))
+    pstate.diagnosticvalues = Array{Any}(length(pstate.diagnostickeys))
   end
 end
 
@@ -192,8 +192,8 @@ set_gmm!(sstate::MuvGAMCState, sampler::GAMC, pstate::ParameterState{Continuous,
     sampler, pstate, sstate.oldinvtensor, sstate.tune.totaltune.step, sstate.sqrtminorscale, sstate.w
   )
 
-tuner_state(sampler::GAMC, tuner::GAMCMCTuner) =
-  GAMCMCTune(
+tuner_state(sampler::GAMC, tuner::GAMCTuner) =
+  GAMCTune(
     BasicMCTune(NaN, 0, 0, tuner.smmalatuner.period),
     BasicMCTune(NaN, 0, 0, tuner.amtuner.period),
     BasicMCTune(sampler.driftstep, 0, 0, tuner.totaltuner.period)
@@ -204,7 +204,8 @@ function sampler_state(
   sampler::GAMC,
   tuner::MCTuner,
   pstate::ParameterState{Continuous, Multivariate},
-  vstate::VariableStateVector
+  vstate::VariableStateVector,
+  diagnostickeys::Vector{Symbol}
 )
   oldinvtensor = inv(pstate.tensorlogtarget)
   w = [1-sampler.c, sampler.c]
@@ -221,7 +222,7 @@ function sampler_state(
   sstate.oldinvtensor[:, :] = inv(pstate.tensorlogtarget)
   sstate.cholinvtensor[:, :] = ctranspose(chol(Hermitian(sstate.oldinvtensor)))
   sstate.oldfirstterm[:] = sstate.oldinvtensor*pstate.gradlogtarget
-  sstate.fmt_iter = format_iteration(ndigits(tuner.totaltuner.period))
+  set_diagnosticindices!(sstate, [:accept], diagnostickeys)
 
   sstate
 end

@@ -11,9 +11,11 @@ import Klara:
   format_percentage,
   generate_empty,
   initialize!,
+  iterate!,
   recursive_mean!,
   reset!,
   sampler_state,
+  set_diagnosticindices!,
   set_gmm,
   set_gmm!,
   tune!,
@@ -22,13 +24,14 @@ import Klara:
 
 export
   GAMC,
-  GAMCMCTune,
-  GAMCMCTuner,
+  GAMCTune,
+  GAMCTuner,
   GAMCState,
   MuvGAMCState,
   am_only_update!,
   cos_update!,
   exp_decay,
+  iterate!,
   lin_decay,
   mod_update!,
   pow_decay,
@@ -38,6 +41,7 @@ export
   rand_pow_decay_update!,
   rand_quad_decay_update!,
   rand_update!,
+  sampler_state,
   show,
   smmala_only_update!
 

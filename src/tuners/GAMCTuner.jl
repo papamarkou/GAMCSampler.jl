@@ -1,4 +1,4 @@
-mutable struct GAMCMCTune <: MCTunerState
+mutable struct GAMCTune <: MCTunerState
   smmalatune::BasicMCTune
   amtune::BasicMCTune
   totaltune::BasicMCTune
@@ -6,16 +6,20 @@ mutable struct GAMCMCTune <: MCTunerState
   amfrequency::Real
 end
 
-GAMCMCTune(smmalatune::BasicMCTune, amtune::BasicMCTune, totaltune::BasicMCTune) =
-  GAMCMCTune(smmalatune, amtune, totaltune, NaN, NaN)
+GAMCTune(smmalatune::BasicMCTune, amtune::BasicMCTune, totaltune::BasicMCTune) =
+  GAMCTune(smmalatune, amtune, totaltune, NaN, NaN)
 
-GAMCMCTune(smmalastep::Real=1., malastep::Real=1.) =
-  GAMCMCTune(BasicMCTune(smmalastep), BasicMCTune(NaN), BasicMCTune(1.), NaN, NaN)
+GAMCTune(smmalastep::Real=1., malastep::Real=1.) =
+  GAMCTune(BasicMCTune(smmalastep), BasicMCTune(NaN), BasicMCTune(1.), NaN, NaN)
 
-struct GAMCMCTuner <: MCTuner
+struct GAMCTuner <: MCTuner
   smmalatuner::VanillaMCTuner
   amtuner::VanillaMCTuner
   totaltuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}
+  verbose::Bool
 end
 
-show(io::IO, tuner::GAMCMCTuner) = print(io, "GAMCMCTuner")
+GAMCTuner(smmalatuner::VanillaMCTuner, amtuner::VanillaMCTuner, totaltuner::Union{VanillaMCTuner, AcceptanceRateMCTuner}) =
+  GAMCTuner(smmalatuner, amtuner, totaltuner, (totaltuner.verbose || smmalatuner.verbose || amtuner.verbose) ? true : false)
+
+show(io::IO, tuner::GAMCTuner) = print(io, "GAMCTuner")

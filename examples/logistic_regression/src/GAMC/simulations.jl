@@ -2,15 +2,15 @@ using Distributions
 using Klara
 using GAMCSampler
 
-CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
-ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
-OUTDIR = joinpath(ROOTDIR, "output")
+# CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
+# ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
+# OUTDIR = joinpath(ROOTDIR, "output")
 
 # OUTDIR = "../../output"
 
 SUBOUTDIR = "GAMC"
 
-nchains = 10
+nchains = 1
 nmcmc = 110000
 nburnin = 10000
 
@@ -24,15 +24,15 @@ outcome = vec(outcome);
 
 function ploglikelihood(p::Vector{Float64}, v::Vector)
   Xp = v[2]*p
-  dot(Xp, v[3])-sum(log(1+exp(Xp)))
+  dot(Xp, v[3])-sum(log.(1+exp.(Xp)))
 end
 
 plogprior(p::Vector{Float64}, v::Vector) = -0.5*(dot(p, p)/v[1]+npars*log(2*pi*v[1]))
 
-pgradlogtarget(p::Vector{Float64}, v::Vector) = v[2]'*(v[3]-1./(1+exp(-v[2]*p)))-p/v[1]
+pgradlogtarget(p::Vector{Float64}, v::Vector) = v[2]'*(v[3]-1./(1+exp.(-v[2]*p)))-p/v[1]
 
 function ptensorlogtarget(p::Vector{Float64}, v::Vector)
-  r = 1./(1+exp(-v[2]*p))
+  r = 1./(1+exp.(-v[2]*p))
   broadcast(*, r.*(1-r), v[2])'*v[2]+(eye(npars)/v[1])
 end
 
@@ -56,18 +56,18 @@ sampler = GAMC(
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
-mctuner = GAMCMCTuner(
+mctuner = GAMCTuner(
   VanillaMCTuner(verbose=false), VanillaMCTuner(verbose=false), AcceptanceRateMCTuner(0.35, verbose=false)
 )
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-times = Array(Float64, nchains)
-stepsizes = Array(Float64, nchains)
-nupdates = Array(Int64, nchains)
+times = Array{Float64}(nchains)
+stepsizes = Array{Float64}(nchains)
+nupdates = Array{Int64}(nchains)
 i = 1
 
-while i <= nchains
+# while i <= nchains
   v0 = Dict(:λ=>100., :X=>covariates, :y=>outcome, :p=>rand(Normal(0, 3), npars))
 
   job = BasicMCJob(model, sampler, mcrange, v0, tuner=mctuner, outopts=outopts)
@@ -79,7 +79,7 @@ while i <= nchains
   chain = output(job)
   ratio = acceptance(chain)
 
-  if 0.22 < ratio < 0.37
+  # if 0.22 < ratio < 0.37
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
@@ -88,9 +88,9 @@ while i <= nchains
     nupdates[i] = job.sstate.updatetensorcount
 
     println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)
-    i += 1
-  end
-end
+    # i += 1
+  # end
+# end
 
 writedlm(joinpath(OUTDIR, SUBOUTDIR, "times.csv"), times, ',')
 writedlm(joinpath(OUTDIR, SUBOUTDIR, "stepsizes.csv"), stepsizes, ',')

@@ -1,12 +1,7 @@
 function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
   job.sstate.count += 1
 
-  if (
-    job.tuner.totaltuner.verbose ||
-    job.tuner.smmalatuner.verbose ||
-    job.tuner.amtuner.verbose ||
-    isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
-  )
+  if job.tuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
     job.sstate.tune.totaltune.proposed += 1
   end
 
@@ -21,7 +16,7 @@ function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
       job.sstate.tune.smmalatune.proposed += 1
     end
 
-    if !_job.sstate.pastupdatetensor
+    if !job.sstate.pastupdatetensor
       job.parameter.uptotensorlogtarget!(job.pstate)
 
       if job.sampler.transform != nothing
@@ -67,7 +62,7 @@ function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
         logdet(job.sstate.tune.totaltune.step*job.sstate.newinvtensor)+dot(
           job.pstate.value-job.sstate.μ,
           job.sstate.pstate.tensorlogtarget*(job.pstate.value-job.sstate.μ)
-        )/_job.sstate.tune.totaltune.step
+        )/job.sstate.tune.totaltune.step
       )
     )
 
@@ -201,12 +196,7 @@ function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
 
   job.sstate.pastupdatetensor = job.sstate.presentupdatetensor
 
-  if (
-    job.tuner.totaltuner.verbose ||
-    job.tuner.smmalatuner.verbose ||
-    job.tuner.amtuner.verbose ||
-    isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
-  )
+  if job.tuner.verbose || isa(job.tuner.totaltuner, AcceptanceRateMCTuner)
     if (
       job.sstate.tune.totaltune.totproposed <= job.range.burnin &&
       mod(job.sstate.tune.totaltune.proposed, job.tuner.totaltuner.period) == 0
@@ -225,15 +215,15 @@ function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
         rate!(job.sstate.tune.amtune)
       end
 
-      if job.tuner.totaltuner.verbose || job.tuner.smmalatuner.verbose || job.tuner.amtuner.verbose
+      if job.tuner.verbose
         println("Burnin iteration ", job.fmt_iter(job.sstate.count), " out of ", job.range.burnin, "...")
 
         if job.tuner.totaltuner.verbose
           println(
             "  Total : ",
-            job.sstate.fmt_iter(job.sstate.tune.totaltune.accepted),
+            job.fmt_iter(job.sstate.tune.totaltune.accepted),
             "/",
-            job.sstate.fmt_iter(job.sstate.tune.totaltune.proposed),
+            job.fmt_iter(job.sstate.tune.totaltune.proposed),
             " (",
             job.fmt_perc(100*job.sstate.tune.totaltune.rate),
             "%) acceptance rate"
@@ -243,15 +233,15 @@ function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
         if job.tuner.smmalatuner.verbose
           println(
             "  SMMALA: ",
-            job.sstate.fmt_iter(job.sstate.tune.smmalatune.accepted),
+            job.fmt_iter(job.sstate.tune.smmalatune.accepted),
             "/",
-            job.sstate.fmt_iter(job.sstate.tune.smmalatune.proposed),
+            job.fmt_iter(job.sstate.tune.smmalatune.proposed),
             " (",
             job.fmt_perc(100*job.sstate.tune.smmalatune.rate),
             "%) acceptance rate, ",
-            job.sstate.fmt_iter(job.sstate.tune.smmalatune.proposed),
+            job.fmt_iter(job.sstate.tune.smmalatune.proposed),
             "/",
-            job.sstate.fmt_iter(job.sstate.tune.totaltune.proposed),
+            job.fmt_iter(job.sstate.tune.totaltune.proposed),
             " (",
             job.fmt_perc(100*job.sstate.tune.smmalafrequency),
             "%) running frequency"
@@ -261,15 +251,15 @@ function iterate!(job::BasicMCJob, ::Type{GAMC}, ::Type{Multivariate})
         if job.tuner.amtuner.verbose
           println(
             "  AM    : ",
-            job.sstate.fmt_iter(job.sstate.tune.amtune.accepted),
+            job.fmt_iter(job.sstate.tune.amtune.accepted),
             "/",
-            job.sstate.fmt_iter(job.sstate.tune.amtune.proposed),
+            job.fmt_iter(job.sstate.tune.amtune.proposed),
             " (",
             job.fmt_perc(100*job.sstate.tune.amtune.rate),
             "%) acceptance rate, ",
-            job.sstate.fmt_iter(job.sstate.tune.amtune.proposed),
+            job.fmt_iter(job.sstate.tune.amtune.proposed),
             "/",
-            job.sstate.fmt_iter(job.sstate.tune.totaltune.proposed),
+            job.fmt_iter(job.sstate.tune.totaltune.proposed),
             " (",
             job.fmt_perc(100*job.sstate.tune.amfrequency),
             "%) running frequency"

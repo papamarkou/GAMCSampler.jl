@@ -1,10 +1,10 @@
 ### GAMC state subtypes
 
-abstract GAMCState <: LMCSamplerState
+abstract type GAMCState{F<:VariateForm} <: LMCSamplerState{F} end
 
 ## MuvGAMCState holds the internal state ("local variables") of the GAMC sampler for multivariate parameters
 
-type MuvGAMCState <: GAMCState
+mutable struct MuvGAMCState <: GAMCState{Multivariate}
   proposal::Union{MultivariateGMM, AbstractMvNormal, Void}
   pstate::ParameterState{Continuous, Multivariate}
   tune::MCTunerState
@@ -123,7 +123,7 @@ MuvGAMCState(
 
 ### Geometric adaptive Monte Carlo (GAMC)
 
-immutable GAMC <: LMCSampler
+struct GAMC <: LMCSampler
   update!::Function
   transform::Union{Function, Void}
   driftstep::Real

@@ -2,6 +2,5 @@
 *.jl.*.cov
 *.jl.mem
 examples/logistic_regression/output
-examples/radial_velocity/data
 examples/radial_velocity/output
 examples/t_distribution/output

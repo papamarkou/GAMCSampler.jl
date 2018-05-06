@@ -4,7 +4,7 @@ CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 ROOTDIR = splitdir(splitdir(splitdir(CURRENTDIR)[1])[1])[1]
 OUTDIR = joinpath(ROOTDIR, "output", "one_planet")
 
-# OUTDIR = "../../../output/one_planet"
+# OUTDIR = "../../output/one_planet"
 
 SUBOUTDIR = "MALA"
 
@@ -14,8 +14,8 @@ nchains = 10
 nmcmc = 110000
 nburnin = 10000
 
-ratio = Array(Float64, nchains)
-essizes = Array(Float64, nchains, npars)
+ratio = Array{Float64}(nchains)
+essizes = Array{Float64}(nchains, npars)
 results = Dict{Symbol, Any}()
 
 for i in 1:nchains

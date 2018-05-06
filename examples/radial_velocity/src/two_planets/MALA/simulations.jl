@@ -7,9 +7,9 @@ SRCDIR = joinpath(ROOTDIR, "src")
 DATADIR = joinpath(ROOTDIR, "data")
 OUTDIR = joinpath(ROOTDIR, "output", "two_planets")
 
-# SRCDIR = "../../../src"
-# DATADIR = "../../../data"
-# OUTDIR = "../../../output/two_planets"
+# SRCDIR = "../../src"
+# DATADIR = "../../data"
+# OUTDIR = "../../output/two_planets"
 
 SUBOUTDIR = "MALA"
 
@@ -45,8 +45,8 @@ mctuner = AcceptanceRateMCTuner(0.574, score=x -> logistic_rate_score(x, 3.), ve
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-times = Array(Float64, nchains)
-stepsizes = Array(Float64, nchains)
+times = Array{Float64}(nchains)
+stepsizes = Array{Float64}(nchains)
 i = 1
 
 while i <= nchains

@@ -15,7 +15,7 @@ nmcmc = 110000
 nburnin = 10000
 
 ratio = Array{Float64}(nchains)
-essizes = Array(Float64}(nchains, npars)
+essizes = Array{Float64}(nchains, npars)
 results = Dict{Symbol, Any}()
 
 for i in 1:nchains

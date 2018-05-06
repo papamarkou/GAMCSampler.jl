@@ -10,7 +10,7 @@ OUTDIR = joinpath(ROOTDIR, "output")
 
 SUBOUTDIR = "GAMC"
 
-nchains = 1
+nchains = 10
 nmcmc = 110000
 nburnin = 10000
 

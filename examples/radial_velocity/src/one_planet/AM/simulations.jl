@@ -7,9 +7,9 @@ SRCDIR = joinpath(ROOTDIR, "src")
 DATADIR = joinpath(ROOTDIR, "data")
 OUTDIR = joinpath(ROOTDIR, "output", "one_planet")
 
-# SRCDIR = "../../../src"
-# DATADIR = "../../../data"
-# OUTDIR = "../../../output/one_planet"
+# SRCDIR = "../../src"
+# DATADIR = "../../data"
+# OUTDIR = "../../output/one_planet"
 
 SUBOUTDIR = "AM"
 
@@ -43,8 +43,8 @@ mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-times = Array(Float64, nchains)
-stepsizes = Array(Float64, nchains)
+times = Array{Float64}(nchains)
+stepsizes = Array{Float64}(nchains)
 i = 1
 
 while i <= nchains

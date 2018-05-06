@@ -6,7 +6,7 @@ CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, 
 ROOTDIR <- dirname(dirname(CURRENTDIR))
 OUTDIR <- file.path(ROOTDIR, "output")
 
-# OUTDIR = "../output"
+# OUTDIR <- "../output"
 
 SUBOUTDIR <- "SMMALA"
 

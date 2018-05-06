@@ -6,7 +6,7 @@ CURRENTDIR <- dirname(regmatches(cmd_args, regexpr("(?<=^--file=).+", cmd_args, 
 ROOTDIR <- dirname(dirname(dirname(CURRENTDIR)))
 OUTDIR <- file.path(ROOTDIR, "output", "one_planet")
 
-# OUTDIR <- "../../../output/one_planet"
+# OUTDIR <- "../../output/one_planet"
 
 SUBOUTDIR <- "SMMALA"
 
@@ -23,7 +23,7 @@ chains <- t(fread(
   file.path(OUTDIR, SUBOUTDIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
 ))
 
-chainmean = mean(chains[, pi])
+chainmean <- mean(chains[, pi])
 
 pdf(file=file.path(OUTDIR, SUBOUTDIR, "rv_one_planet_smmala_traceplot.pdf"), width=10, height=6)
 

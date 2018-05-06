@@ -96,7 +96,7 @@ MuvGAMCState(
   sqrtminorscale::Real,
   w::RealVector,
   tune::MCTunerState=GAMCTune(),
-  lastmean::RealVector=Array(eltype(pstate), pstate.size)
+  lastmean::RealVector=Array{eltype(pstate)}(pstate.size)
 ) =
   MuvGAMCState(
   nothing,
@@ -104,14 +104,14 @@ MuvGAMCState(
   tune,
   NaN,
   NaN,
-  Array(eltype(pstate), pstate.size),
-  Array(eltype(pstate), pstate.size),
-  Array(eltype(pstate), pstate.size),
-  Array(eltype(pstate), pstate.size, pstate.size),
-  Array(eltype(pstate), pstate.size, pstate.size),
-  RealLowerTriangular(Array(eltype(pstate), pstate.size, pstate.size)),
-  Array(eltype(pstate), pstate.size),
-  Array(eltype(pstate), pstate.size),
+  Array{eltype(pstate)}(pstate.size),
+  Array{eltype(pstate)}(pstate.size),
+  Array{eltype(pstate)}(pstate.size),
+  Array{eltype(pstate)}(pstate.size, pstate.size),
+  Array{eltype(pstate)}(pstate.size, pstate.size),
+  RealLowerTriangular(Array{eltype(pstate)}(pstate.size, pstate.size)),
+  Array{eltype(pstate)}(pstate.size),
+  Array{eltype(pstate)}(pstate.size),
   sqrtminorscale,
   w,
   true,

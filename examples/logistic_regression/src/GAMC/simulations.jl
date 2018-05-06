@@ -6,7 +6,7 @@ using GAMCSampler
 # ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
 # OUTDIR = joinpath(ROOTDIR, "output")
 
-# OUTDIR = "../../output"
+OUTDIR = "../output"
 
 SUBOUTDIR = "GAMC"
 

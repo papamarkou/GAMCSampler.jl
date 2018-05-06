@@ -21,7 +21,7 @@ chains <- t(fread(
   file.path(OUTDIR, SUBOUTDIR, paste("chain", str_pad(ci, 2, pad="0"), ".csv", sep="")), sep=",", header=FALSE
 ))
 
-chainmean = mean(chains[, pi])
+chainmean <- mean(chains[, pi])
 
 pdf(file=file.path(OUTDIR, SUBOUTDIR, "logit_gamc_traceplot.pdf"), width=10, height=6)
 

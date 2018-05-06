@@ -5,7 +5,7 @@ CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
 OUTDIR = joinpath(ROOTDIR, "output")
 
-# OUTDIR = "../../output"
+# OUTDIR = "../output"
 
 SUBOUTDIR = "SMMALA"
 
@@ -41,8 +41,8 @@ mctuner = AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verb
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-times = Array(Float64, nchains)
-stepsizes = Array(Float64, nchains)
+times = Array{Float64}(nchains)
+stepsizes = Array{Float64}(nchains)
 i = 1
 
 while i <= nchains

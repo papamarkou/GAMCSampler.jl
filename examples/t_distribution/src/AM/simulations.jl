@@ -5,7 +5,7 @@ CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
 OUTDIR = joinpath(ROOTDIR, "output")
 
-# OUTDIR = "../../output"
+# OUTDIR = "../output"
 
 SUBOUTDIR = "AM"
 
@@ -47,8 +47,8 @@ mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-times = Array(Float64, nchains)
-stepsizes = Array(Float64, nchains)
+times = Array{Float64}(nchains)
+stepsizes = Array{Float64}(nchains)
 i = 1
 
 while i <= nchains

@@ -5,7 +5,7 @@ CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
 OUTDIR = joinpath(ROOTDIR, "output")
 
-# OUTDIR = "../../output"
+# OUTDIR = "../output"
 
 SUBOUTDIR = "SMMALA"
 
@@ -23,15 +23,15 @@ outcome = vec(outcome);
 
 function ploglikelihood(p::Vector{Float64}, v::Vector)
   Xp = v[2]*p
-  dot(Xp, v[3])-sum(log(1+exp(Xp)))
+  dot(Xp, v[3])-sum(log.(1+exp.(Xp)))
 end
 
 plogprior(p::Vector{Float64}, v::Vector) = -0.5*(dot(p, p)/v[1]+npars*log(2*pi*v[1]))
 
-pgradlogtarget(p::Vector{Float64}, v::Vector) = v[2]'*(v[3]-1./(1+exp(-v[2]*p)))-p/v[1]
+pgradlogtarget(p::Vector{Float64}, v::Vector) = v[2]'*(v[3]-1./(1+exp.(-v[2]*p)))-p/v[1]
 
 function ptensorlogtarget(p::Vector{Float64}, v::Vector)
-  r = 1./(1+exp(-v[2]*p))
+  r = 1./(1+exp.(-v[2]*p))
   broadcast(*, r.*(1-r), v[2])'*v[2]+(eye(npars)/v[1])
 end
 
@@ -54,8 +54,8 @@ mctuner = AcceptanceRateMCTuner(0.7, score=x -> logistic_rate_score(x, 3.), verb
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
-times = Array(Float64, nchains)
-stepsizes = Array(Float64, nchains)
+times = Array{Float64}(nchains)
+stepsizes = Array{Float64}(nchains)
 i = 1
 
 while i <= nchains

@@ -2,15 +2,15 @@ using Distributions
 using Klara
 using GAMCSampler
 
-# CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
-# ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
-# OUTDIR = joinpath(ROOTDIR, "output")
+CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
+ROOTDIR = splitdir(splitdir(CURRENTDIR)[1])[1]
+OUTDIR = joinpath(ROOTDIR, "output")
 
-OUTDIR = "../output"
+# OUTDIR = "../output"
 
 SUBOUTDIR = "GAMC"
 
-nchains = 1
+nchains = 10
 nmcmc = 110000
 nburnin = 10000
 
@@ -56,9 +56,7 @@ sampler = GAMC(
 
 mcrange = BasicMCRange(nsteps=nmcmc, burnin=nburnin)
 
-mctuner = GAMCTuner(
-  VanillaMCTuner(verbose=false), VanillaMCTuner(verbose=false), AcceptanceRateMCTuner(0.35, verbose=false)
-)
+mctuner = GAMCTuner(VanillaMCTuner(verbose=false), VanillaMCTuner(verbose=false), AcceptanceRateMCTuner(0.35, verbose=false))
 
 outopts = Dict{Symbol, Any}(:monitor=>[:value], :diagnostics=>[:accept])
 
@@ -67,7 +65,7 @@ stepsizes = Array{Float64}(nchains)
 nupdates = Array{Int64}(nchains)
 i = 1
 
-# while i <= nchains
+while i <= nchains
   v0 = Dict(:λ=>100., :X=>covariates, :y=>outcome, :p=>rand(Normal(0, 3), npars))
 
   job = BasicMCJob(model, sampler, mcrange, v0, tuner=mctuner, outopts=outopts)
@@ -79,7 +77,7 @@ i = 1
   chain = output(job)
   ratio = acceptance(chain)
 
-  # if 0.22 < ratio < 0.37
+  if 0.22 < ratio < 0.37
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "chain"*lpad(string(i), 2, 0)*".csv"), chain.value, ',')
     writedlm(joinpath(OUTDIR, SUBOUTDIR, "diagnostics"*lpad(string(i), 2, 0)*".csv"), vec(chain.diagnosticvalues), ',')
 
@@ -88,9 +86,9 @@ i = 1
     nupdates[i] = job.sstate.updatetensorcount
 
     println("Iteration ", i, " of ", nchains, " completed with acceptance ratio ", ratio)
-    # i += 1
-  # end
-# end
+    i += 1
+  end
+end
 
 writedlm(joinpath(OUTDIR, SUBOUTDIR, "times.csv"), times, ',')
 writedlm(joinpath(OUTDIR, SUBOUTDIR, "stepsizes.csv"), stepsizes, ',')

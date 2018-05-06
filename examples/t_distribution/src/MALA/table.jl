@@ -4,7 +4,7 @@ CURRENTDIR, CURRENTFILE = splitdir(@__FILE__)
 PARENTDIR = join(split(CURRENTDIR, '/')[1:end-2], '/')
 OUTDIR = joinpath(PARENTDIR, "output")
 
-# OUTDIR = "../../output"
+# OUTDIR = "../output"
 
 SUBOUTDIR = "MALA"
 
@@ -14,8 +14,8 @@ nchains = 10
 nmcmc = 110000
 nburnin = 10000
 
-ratio = Array(Float64, nchains)
-essizes = Array(Float64, nchains, npars)
+ratio = Array{Float64}(nchains)
+essizes = Array(Float64}(nchains, npars)
 results = Dict{Symbol, Any}()
 
 for i in 1:nchains
